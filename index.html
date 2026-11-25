@@ -91,6 +91,7 @@ ul.tasks{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
 .tdt.ammo.low .v{color:#ff7a66;animation:tdlow 1s infinite}
 .tdt.prize .v{color:#6df3c0}.tdt.prize.solar{background:linear-gradient(180deg,#8a4b00,#4d2a00)}.tdt.prize.solar .v{color:#ffd23f}
 .tdt.wave .v{color:#9fe8ff}
+.tdpause{position:absolute;right:10px;top:10px;z-index:2;font-size:15px;padding:7px 14px;min-height:38px}
 .tdt .buy{position:absolute;right:10px;top:10px;font:400 13px var(--disp);padding:4px 10px;border-radius:10px;border:2px solid #fff3a0;background:linear-gradient(180deg,#ffe066,#ffab1f);color:#3a2400;cursor:pointer;box-shadow:0 3px 0 #a56a00}
 .tdt .buy:disabled{opacity:.45;cursor:not-allowed}
 @keyframes tdlow{50%{opacity:.55}}
@@ -302,15 +303,18 @@ button.pc:hover:not(:disabled){transform:translateY(-4px) rotateX(4deg)}
         <li><b>Buy a tower</b> with chips, tap the map to place it beside the road, then tap it to upgrade (3 levels).</li>
         <li><b>Buy ammo.</b> Every shot uses ammo (shown on each tower card) and ammo costs chips. No ammo, no shooting.</li>
         <li><b>Send waves.</b> Pop a blob and it shrinks a size, so big ones take several hits. Wave 10 brings an airship that splits into blobs.</li>
-        <li><b>Win</b> all 10 waves to finish the round and collect the <b>round prize</b> (shown next to your lives). Every <b>5th round is a solar-prize round</b>: you also get back what you paid for every tower on your map. You keep your towers and leftover ammo for the harder next round. <b>Lose</b> and every tower and every bit of ammo is gone, with no prize. A round in progress is saved, so closing or reloading the page just pauses it.</li>
-        <li><b>Need more chips?</b> Press Pause during a wave (the game freezes, and it also waits between waves). Start the timer at the top and study, then buy towers, upgrades and ammo with what you earn and press Resume. Switching to another tab also pauses it.</li>
+        <li><b>Win</b> all 10 waves to finish the round. The <b>winning pot</b> is the round prize <b>plus every chip you spent on towers, upgrades and ammo</b>, and the pot grows as you spend. You get all of it back when the round ends. Every <b>5th round is a solar-prize round</b> that also pays back the full price of every tower on your map. You keep your towers and leftover ammo for the next, harder round. <b>Lose</b> and every tower and every bit of ammo is gone, with no pot. A round in progress is saved, so closing or reloading the page just pauses it.</li>
+        <li><b>Need more chips?</b> Press Pause (top right of the map) during a wave: the game freezes, and it also freezes by itself when you run out of ammo. It waits between waves too. Start the timer at the top and study, then buy towers, upgrades and ammo with what you earn and press Resume. Switching to another tab also pauses it.</li>
       </ol>
     </details>
     <div class="tdframe">
       <div id="tdStats" class="tdhud"></div>
-      <canvas id="tdCv" style="width:100%;aspect-ratio:640/400;display:block;touch-action:manipulation;background:#2c9"></canvas>
+      <div style="position:relative">
+        <canvas id="tdCv" style="width:100%;aspect-ratio:640/400;display:block;touch-action:manipulation;background:#2c9"></canvas>
+        <button id="tdPause" data-td-pause="1" class="btn sm tdpause" hidden>Pause</button>
+      </div>
     </div>
-    <div class="row" style="margin:12px 0"><button id="tdGo" data-td-go="1" class="btn primary">Start round</button><button id="tdPause" data-td-pause="1" class="btn sm" hidden>Pause</button><button id="tdSpeed" data-td-speed="1" class="btn sm">Speed x1</button><button id="tdAuto" data-td-auto="1" class="btn sm">Auto-send: off</button><button id="tdForfeit" data-td-ff="1" class="btn sm stop" hidden>Give up</button></div>
+    <div class="row" style="margin:12px 0"><button id="tdGo" data-td-go="1" class="btn primary">Start round</button><button id="tdSpeed" data-td-speed="1" class="btn sm">Speed x1</button><button id="tdAuto" data-td-auto="1" class="btn sm">Auto-send: off</button><button id="tdForfeit" data-td-ff="1" class="btn sm stop" hidden>Give up</button></div>
     <div class="msg" id="tdMsg"></div>
     <div id="tdSel" class="how" hidden></div>
     <h3 style="margin:14px 0 8px">Towers</h3>
@@ -799,6 +803,8 @@ function tdStep(dt){
 }
 /* ---- end of simulation core ---- */
 const tdPrize=r=>250+150*r,tdSolar=r=>r%5===0;
+const tdVal=t=>t.val!=null?t.val:(t.sp||0);
+const tdTowerVal=()=>S.td.towers.reduce((a,t)=>a+tdVal(t),0);
 function tdSave(){
   const td=S.td;if(!td||!td.live)return;
   td.run={wave:R.wave,lives:R.lives,phase:R.phase,spawnT:R.spawnT,q:R.q,en:R.en.filter(e=>!e.dead).map(e=>({d:e.d,tier:e.tier,boss:e.boss,hp:e.hp,max:e.max,slow:e.slow,slowT:e.slowT}))};
@@ -809,10 +815,10 @@ function tdEnd(win){
   const td=S.td,r=td.round;
   R.paused=false;R.phase='idle';R.q=[];R.en=[];R.pr=[];R.wave=0;R.lives=TDLIVES;R.autoT=0;R.sel=null;R.place=null;
   if(win){
-    const prize=tdPrize(r),solar=tdSolar(r),back=solar?td.towers.reduce((a,t)=>a+(t.sp||0),0):0;
-    td.live=false;td.run=null;td.round=r+1;td.wins=(td.wins||0)+1;td.spent=0;if(solar)td.towers.forEach(t=>{t.sp=0});payout(prize+back,'td');
-    R.msg=(solar?'SOLAR-PRIZE ROUND! ':'')+'Round '+r+' finished. Round prize '+fmt(prize)+(solar?' + '+fmt(back)+' back for the towers on your map':'')+' = +'+fmt(prize+back)+' chips. Your towers and leftover ammo carry on to round '+td.round+'.';
-    toast((solar?'Solar prize: +':'Round prize: +')+fmt(prize+back)+' chips');
+    const prize=tdPrize(r),solar=tdSolar(r),spent=td.spent||0,tw=solar?tdTowerVal():0,pot=prize+spent+tw;
+    td.live=false;td.run=null;td.round=r+1;td.wins=(td.wins||0)+1;td.spent=0;td.towers.forEach(t=>{t.sp=0});payout(pot,'td');
+    R.msg=(solar?'SOLAR-PRIZE ROUND! ':'')+'Round '+r+' finished. Winning pot: round prize '+fmt(prize)+' + '+fmt(spent)+' you spent on towers and ammo'+(solar?' + '+fmt(tw)+' for the towers on your map':'')+' = +'+fmt(pot)+' chips. Your towers and leftover ammo carry on to round '+td.round+'.';
+    toast((solar?'Solar prize: +':'Winning pot: +')+fmt(pot)+' chips');
   }else{
     const lost=td.towers.length,am=td.ammo;
     td.towers=[];td.ammo=0;td.live=false;td.run=null;td.spent=0;td.losses=(td.losses||0)+1;touch();
@@ -876,7 +882,7 @@ function tdDraw(){
     else if(f.k==='pop'){c.strokeStyle=f.c;c.lineWidth=2;c.beginPath();c.arc(f.x,f.y,6+(.25-f.t)*40,0,6.3);c.stroke()}
     else if(f.k==='leak'){c.fillStyle='rgba(255,60,40,'+f.t+')';c.fillRect(TDW-24,0,24,TDH)}
   }
-  if(R.paused){c.fillStyle='rgba(3,34,54,.7)';c.fillRect(0,0,TDW,TDH);c.fillStyle='#ffe066';c.font='bold 30px sans-serif';c.textAlign='center';c.fillText('Paused',TDW/2,TDH/2-8);c.font='16px sans-serif';c.fillStyle='#fff';c.fillText('Study to earn chips, then spend them and press Resume',TDW/2,TDH/2+22);c.textAlign='left'}
+  if(R.paused){c.fillStyle='rgba(3,34,54,.7)';c.fillRect(0,0,TDW,TDH);c.fillStyle='#ffe066';c.font='bold 30px sans-serif';c.textAlign='center';c.fillText(R.why==='ammo'?'Out of ammo':'Paused',TDW/2,TDH/2-8);c.font='16px sans-serif';c.fillStyle='#fff';c.fillText(R.why==='ammo'?'Buy ammo (top bar) and press Resume':'Study to earn chips, then spend them and press Resume',TDW/2,TDH/2+22);c.textAlign='left'}
   else if(R.phase==='wave'&&S.td.ammo<=0){c.fillStyle='rgba(120,0,0,.65)';c.fillRect(0,0,TDW,34);c.fillStyle='#fff';c.font='bold 18px sans-serif';c.textAlign='center';c.fillText('Out of ammo! Buy more below.',TDW/2,23);c.textAlign='left'}
 }
 function tdCanPlace(x,y){
@@ -894,7 +900,7 @@ tdCv.addEventListener('click',e=>{
     const K=TDK[R.place];
     if(!tdCanPlace(p.x,p.y)){toast('Not here: keep towers off the path and apart');return}
     if(Math.floor(S.chips)<K.c){toast('Not enough chips: '+K.n+' costs '+K.c);return}
-    spend(K.c,'td');S.td.spent=(S.td.spent||0)+K.c;const t={id:R.nid++,k:R.place,x:p.x,y:p.y,lv:1,tg:'first',sp:K.c,cd:0,a:0};
+    spend(K.c,'td');S.td.spent=(S.td.spent||0)+K.c;const t={id:R.nid++,k:R.place,x:p.x,y:p.y,lv:1,tg:'first',sp:K.c,val:K.c,cd:0,a:0};
     S.td.towers.push(t);R.sel=t.id;
     if(S.chips<K.c)R.place=null;
     touch();tdRender();return;
@@ -907,7 +913,7 @@ function tdStart(){
   const td=S.td;
   if(!td.towers.length){toast('Place at least one tower first');return}
   if(R.wave===0){td.live=true;R.lives=TDLIVES;flush()}
-  R.paused=false;R.phase='wave';R.q=tdGen(td.round,R.wave+1);R.spawnT=0;R.msg='';R.autoT=0;R.dry=false;tdSave();flush();tdRender();
+  R.paused=false;R.why='';R.phase='wave';R.q=tdGen(td.round,R.wave+1);R.spawnT=0;R.msg='';R.autoT=0;R.dry=false;tdSave();flush();tdRender();
 }
 function tdForfeit(){
   if(!S.td.live)return;
@@ -919,14 +925,14 @@ $('#p-td').addEventListener('click',e=>{
   const d=b.dataset;
   if(d.tdShop){R.place=R.place===d.tdShop?null:d.tdShop;R.sel=null;tdRender()}
   else if(d.tdAmmo){const o=TDAMMO[+d.tdAmmo];if(Math.floor(S.chips)<o[1]){toast('Not enough chips');return}spend(o[1],'td');S.td.spent=(S.td.spent||0)+o[1];S.td.ammo+=o[0];touch();R.dry=false;tdRender()}
-  else if(d.tdUp){const t=S.td.towers.find(z=>z.id===R.sel);if(!t)return;const c=tdUpCost(t);if(!c)return;if(Math.floor(S.chips)<c){toast('Not enough chips');return}spend(c,'td');S.td.spent=(S.td.spent||0)+c;t.lv++;t.sp+=c;touch();tdRender()}
+  else if(d.tdUp){const t=S.td.towers.find(z=>z.id===R.sel);if(!t)return;const c=tdUpCost(t);if(!c)return;if(Math.floor(S.chips)<c){toast('Not enough chips');return}spend(c,'td');S.td.spent=(S.td.spent||0)+c;t.lv++;t.sp+=c;t.val=tdVal(t)+c;touch();tdRender()}
   else if(d.tdSell){
     const t=S.td.towers.find(z=>z.id===R.sel);if(!t||S.td.live)return;
     const v=Math.floor(t.sp*.6);S.td.spent=Math.max(0,(S.td.spent||0)-t.sp);S.td.towers=S.td.towers.filter(z=>z!==t);R.sel=null;payout(v,'td');touch();tdRender();toast('Sold for '+fmt(v))
   }
   else if(d.tdTg){const t=S.td.towers.find(z=>z.id===R.sel);if(!t)return;t.tg=t.tg==='first'?'strong':t.tg==='strong'?'last':'first';touch();tdRender()}
   else if(d.tdGo)tdStart();
-  else if(d.tdPause){if(R.phase==='wave'){R.paused=!R.paused;tdSave();tdRender()}}
+  else if(d.tdPause){if(R.phase==='wave'){R.paused=!R.paused;R.why='';if(!R.paused)R.dry=false;tdSave();tdRender()}}
   else if(d.tdSpeed){R.speed=R.speed>=3?1:R.speed+1;tdRender()}
   else if(d.tdAuto){R.auto=!R.auto;if(R.auto&&R.phase==='idle'&&R.wave>0)R.autoT=.8;tdRender()}
   else if(d.tdFf)tdForfeit();
@@ -947,7 +953,7 @@ function tdRender(){
   const go=$('#tdGo');
   go.textContent=R.phase==='wave'?'Wave '+(R.wave+1)+' running...':(R.wave===0?'Start round '+td.round:'Send wave '+(R.wave+1));
   go.disabled=R.phase==='wave';
-  const pb=$('#tdPause');pb.hidden=R.phase!=='wave';pb.textContent=R.paused?'Resume':'Pause';
+  const pb=$('#tdPause');pb.hidden=R.phase!=='wave';pb.textContent=R.paused?'\u25B6 Resume':'\u23F8 Pause';
   $('#tdSpeed').textContent='Speed x'+R.speed;
   $('#tdAuto').textContent='Auto-send: '+(R.auto?'on':'off');
   const ff=$('#tdForfeit');ff.hidden=!td.live;if(!R._ff)ff.textContent='Give up';
@@ -956,14 +962,14 @@ function tdRender(){
 }
 let tdHudS='';
 function tdHud(){
-  const td=S.td,val=td.towers.reduce((a,t)=>a+(t.sp||0),0),wv=Math.min(TDWAVES,R.wave+(R.phase==='wave'?1:0));
-  const key=[td.round,wv,R.lives,td.ammo,Math.floor(S.chips)>=TDAMMO[0][1],val].join('|');
+  const td=S.td,spent=td.spent||0,tw=tdSolar(td.round)?tdTowerVal():0,pr=tdPrize(td.round),pot=pr+spent+tw,wv=Math.min(TDWAVES,R.wave+(R.phase==='wave'?1:0));
+  const key=[td.round,wv,R.lives,td.ammo,Math.floor(S.chips)>=TDAMMO[0][1],pot].join('|');
   if(key===tdHudS)return;tdHudS=key;
   const solar=tdSolar(td.round),nextSolar=Math.ceil(td.round/5)*5;
   $('#tdStats').innerHTML=
     '<div class="tdt life"><span class="k">\u2764\uFE0F Lives</span><span class="v">'+R.lives+'</span><div class="tb"><i style="width:'+Math.round(R.lives/TDLIVES*100)+'%"></i></div></div>'+
     '<div class="tdt ammo'+(td.ammo<30?' low':'')+'"><span class="k">\uD83C\uDF30 Ammo</span><span class="v">'+fmt(td.ammo)+'</span><span class="s">'+(td.ammo<30?'Running low!':'Every shot uses ammo')+'</span><button class="buy" data-td-ammo="0">+'+TDAMMO[0][0]+' for '+TDAMMO[0][1]+'</button></div>'+
-    '<div class="tdt prize'+(solar?' solar':'')+'"><span class="k">\uD83E\uDE99 Round prize'+(solar?' \u00b7 \u2600 Solar':'')+'</span><span class="v">'+fmt(tdPrize(td.round))+(solar?'<small style="font-size:18px"> +'+fmt(val)+'</small>':'')+'</span><span class="s">'+(solar?'Solar-prize round: towers on your map are paid back too':'Solar-prize round at round '+nextSolar)+'</span></div>'+
+    '<div class="tdt prize'+(solar?' solar':'')+'"><span class="k">\uD83E\uDE99 Winning pot'+(solar?' \u00b7 \u2600 Solar':'')+'</span><span class="v">'+fmt(pot)+'</span><span class="s">Prize '+fmt(pr)+' + '+fmt(spent)+' spent'+(solar?' + '+fmt(tw)+' towers':'')+(solar?'':' \u00b7 solar round at '+nextSolar)+'</span></div>'+
     '<div class="tdt wave"><span class="k">\uD83C\uDF0A Round '+td.round+'</span><span class="v">'+wv+'<small style="font-size:18px">/'+TDWAVES+'</small></span><div class="tb"><i style="width:'+Math.round(wv/TDWAVES*100)+'%;background:linear-gradient(90deg,#4cc3ff,#b5ecff)"></i></div></div>';
   document.querySelectorAll('[data-td-ammo]').forEach(b=>{b.disabled=Math.floor(S.chips)<TDAMMO[+b.dataset.tdAmmo][1]});
 }
@@ -974,6 +980,8 @@ function tdLoop(ts){
   const pane=document.getElementById('p-td');
   if(!pane||pane.hidden||document.hidden||!S.td)return;
   if(R.phase==='wave'&&!R.paused){const n=Math.max(1,Math.ceil(dt*R.speed/.033)),h=dt*R.speed/n;for(let i=0;i<n;i++)if(R.phase==='wave')tdStep(h)}
+  /* out of ammo: freeze the round until you restock */
+  if(R.phase==='wave'&&!R.paused&&(R.dry||S.td.ammo<=0)){R.paused=true;R.why='ammo';R.dry=false;R.msg='Out of ammo, so the game paused. Buy ammo, then press Resume.';tdSave();tdRender()}
   else if(R.autoT>0){R.autoT-=dt;if(R.autoT<=0&&R.auto)tdStart()}
   R.saveT=(R.saveT||0)+dt;if(R.saveT>1){R.saveT=0;tdSave()}
   tdDraw();tdHud();
@@ -1129,7 +1137,7 @@ function chRender(){
   $('#chPick').hidden=!picking;$('#chPlay').hidden=picking;
   if(picking){
     const icons=['\uD83C\uDF31','\uD83C\uDF3B','\uD83D\uDD25'];
-    $('#chPick').innerHTML=CHLV.map((l,i)=>{const ok=Math.floor(S.chips)>=l.buy+l.fee;return'<button class="chlv l'+i+'" data-lv="'+i+'"'+(ok?'':' disabled')+'><span class="chi">'+icons[i]+'</span><b>'+l.n.split(' (')[0]+'</b><em>'+l.n.split('(')[1].replace(')','').toUpperCase()+' OPPONENT</em><span>Buy-in <b style="font-size:19px">'+l.buy+'</b></span><span>Each move <b style="font-size:19px">'+l.fee+'</b></span><span>Win prize <b style="font-size:19px">'+l.prize.toLocaleString('en-US')+'</b></span><span class="go">'+(ok?'Play':'Need '+fmt(l.buy+l.fee-Math.floor(S.chips))+' more chips')+'</span></button>'}).join('');
+    $('#chPick').innerHTML=CHLV.map((l,i)=>{const ok=Math.floor(S.chips)>=l.buy;return'<button class="chlv l'+i+'" data-lv="'+i+'"'+(ok?'':' disabled')+'><span class="chi">'+icons[i]+'</span><b>'+l.n.split(' (')[0]+'</b><em>'+l.n.split('(')[1].replace(')','').toUpperCase()+' OPPONENT</em><span>Buy-in <b style="font-size:19px">'+l.buy+'</b></span><span>Each move <b style="font-size:19px">'+l.fee+'</b></span><span>Win prize <b style="font-size:19px">'+l.prize.toLocaleString('en-US')+'</b></span><span class="go">'+(ok?'Play':'Need '+fmt(l.buy-Math.floor(S.chips))+' more chips')+'</span></button>'}).join('');
   }
   $('#chRes').hidden=!ch.live;$('#chAgain').hidden=ch.live;
   if(!ch._rc)$('#chRes').textContent='Resign';
@@ -1190,7 +1198,7 @@ $('#chBoard').addEventListener('click',e=>{
 $('#chPick').addEventListener('click',e=>{
   const b=e.target.closest('[data-lv]');if(!b||chBusy)return;
   const ch=S.chess,nl=+b.dataset.lv,L=CHLV[nl];
-  if(Math.floor(S.chips)<L.buy+L.fee){toast('You need '+(L.buy+L.fee)+' chips: '+L.buy+' buy-in plus your first move ('+L.fee+')');return}
+  if(Math.floor(S.chips)<L.buy){toast('You need '+L.buy+' chips for the buy-in');return}
   spend(L.buy,'ch');ch.lv=nl;ch.g=chNew();ch.live=true;ch.paid=L.buy;ch.fees=0;chPicking=false;
   ch.msg='Buy-in paid ('+L.buy+'). Your move; each move costs '+L.fee+' chips.';chSel=-1;touch();flush();chRender();
 });

@@ -135,7 +135,7 @@ function chRender(){
   $('#chPick').hidden=!picking;$('#chPlay').hidden=picking;
   if(picking){
     const icons=['\uD83C\uDF31','\uD83C\uDF3B','\uD83D\uDD25'];
-    $('#chPick').innerHTML=CHLV.map((l,i)=>{const ok=Math.floor(S.chips)>=l.buy+l.fee;return'<button class="chlv l'+i+'" data-lv="'+i+'"'+(ok?'':' disabled')+'><span class="chi">'+icons[i]+'</span><b>'+l.n.split(' (')[0]+'</b><em>'+l.n.split('(')[1].replace(')','').toUpperCase()+' OPPONENT</em><span>Buy-in <b style="font-size:19px">'+l.buy+'</b></span><span>Each move <b style="font-size:19px">'+l.fee+'</b></span><span>Win prize <b style="font-size:19px">'+l.prize.toLocaleString('en-US')+'</b></span><span class="go">'+(ok?'Play':'Need '+fmt(l.buy+l.fee-Math.floor(S.chips))+' more chips')+'</span></button>'}).join('');
+    $('#chPick').innerHTML=CHLV.map((l,i)=>{const ok=Math.floor(S.chips)>=l.buy;return'<button class="chlv l'+i+'" data-lv="'+i+'"'+(ok?'':' disabled')+'><span class="chi">'+icons[i]+'</span><b>'+l.n.split(' (')[0]+'</b><em>'+l.n.split('(')[1].replace(')','').toUpperCase()+' OPPONENT</em><span>Buy-in <b style="font-size:19px">'+l.buy+'</b></span><span>Each move <b style="font-size:19px">'+l.fee+'</b></span><span>Win prize <b style="font-size:19px">'+l.prize.toLocaleString('en-US')+'</b></span><span class="go">'+(ok?'Play':'Need '+fmt(l.buy-Math.floor(S.chips))+' more chips')+'</span></button>'}).join('');
   }
   $('#chRes').hidden=!ch.live;$('#chAgain').hidden=ch.live;
   if(!ch._rc)$('#chRes').textContent='Resign';
@@ -196,7 +196,7 @@ $('#chBoard').addEventListener('click',e=>{
 $('#chPick').addEventListener('click',e=>{
   const b=e.target.closest('[data-lv]');if(!b||chBusy)return;
   const ch=S.chess,nl=+b.dataset.lv,L=CHLV[nl];
-  if(Math.floor(S.chips)<L.buy+L.fee){toast('You need '+(L.buy+L.fee)+' chips: '+L.buy+' buy-in plus your first move ('+L.fee+')');return}
+  if(Math.floor(S.chips)<L.buy){toast('You need '+L.buy+' chips for the buy-in');return}
   spend(L.buy,'ch');ch.lv=nl;ch.g=chNew();ch.live=true;ch.paid=L.buy;ch.fees=0;chPicking=false;
   ch.msg='Buy-in paid ('+L.buy+'). Your move; each move costs '+L.fee+' chips.';chSel=-1;touch();flush();chRender();
 });
