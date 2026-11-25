@@ -213,7 +213,7 @@ function renderMk(){
     let c=g.querySelector('[data-id="'+m.id+'"]');
     if(!c){
       c=document.createElement('div');c.className='mk';c.dataset.id=m.id;c.style.order=i;
-      c.innerHTML='<h3></h3><div class="row sp live"><span class="lp mono"></span><span class="ld mono"></span></div><div class="row sp" style="font-size:12px"><span class="mute rl"></span><span class="cd mono"></span></div><div class="px"><div class="y"></div><div class="n"></div></div><div class="chart"><div class="cv"></div><span class="yh"></span><span class="yl"></span><span class="ys"></span></div><div class="cx"><span class="c1"></span><span>now</span></div><div class="row" style="flex-wrap:nowrap"><button class="btn buy" data-buy-mk="'+esc(m.id)+'" data-side="Y"><span class="t"></span><small class="s"></small></button><button class="btn buy no" data-buy-mk="'+esc(m.id)+'" data-side="N"><span class="t"></span><small class="s"></small></button></div>';
+      c.innerHTML='<h3></h3><div class="row sp live"><span class="lp mono"></span><span class="ld mono"></span></div><div class="row sp" style="font-size:12px"><span class="mute rl"></span><span class="cd mono"></span></div><div class="px"><div class="y"></div><div class="n"></div></div><div class="chart"><div class="cv"></div><span class="yh"></span><span class="yl"></span><span class="ys"></span></div><div class="cx"><span class="c1"></span><span>now</span></div><div class="mp"></div><div class="row" style="flex-wrap:nowrap"><button class="btn buy" data-buy-mk="'+esc(m.id)+'" data-side="Y"><span class="t"></span><small class="s"></small></button><button class="btn buy no" data-buy-mk="'+esc(m.id)+'" data-side="N"><span class="t"></span><small class="s"></small></button></div>';
       c.querySelector('h3').textContent=m.q;
       c.querySelector('.rl').textContent='5-min round '+(m.rd||'')+' · ends in';
       g.append(c);
@@ -253,23 +253,27 @@ function posWorth(p){
 }
 /* live numbers: what you paid, what you could sell for right now, and the difference */
 function updPos(){
-  let paid=0,worth=0;
-  S.pos.forEach(p=>{
-    const w=posWorth(p),c=posCost(p);if(w==null)return;
-    paid+=c;worth+=w;
-    const r=document.querySelector('[data-pr="'+p.id+'"]');if(!r)return;
-    r.querySelector('.pw').textContent=fmt(w);
-    const d=r.querySelector('.pp');d.textContent=pnlTxt(w-c);d.style.color=pnlCol(w-c);
+  let paid=0,worth=0,cnt=0;
+  document.querySelectorAll('#mkGrid .mk').forEach(c=>{
+    const mine=S.pos.filter(p=>p.mid===c.dataset.id),box=c.querySelector('.mp');
+    if(!box)return;
+    const sig=mine.map(p=>p.id).join(',');
+    if(box.dataset.sig!==sig){
+      box.dataset.sig=sig;
+      box.innerHTML=mine.map(p=>'<div data-pr="'+esc(p.id)+'" class="pr"><div class="row sp" style="flex-wrap:nowrap"><span><b>'+(p.side==='Y'?'YES':'NO')+'</b> x'+p.n+' at '+p.px+'\u00a2</span><button class="btn sm" data-sell="'+esc(p.id)+'">Sell now</button></div><div class="mono" style="font-size:12px">Paid <b>'+fmt(posCost(p))+'</b> &middot; Worth now <b class="pw"></b> &middot; <b class="pp"></b> &middot; <span class="mute">pays '+fmt(p.n*100)+' if right</span></div></div>').join('');
+    }
+    mine.forEach(p=>{
+      const w=posWorth(p),cst=posCost(p);if(w==null)return;
+      paid+=cst;worth+=w;cnt++;
+      const r=box.querySelector('[data-pr="'+p.id+'"]');if(!r)return;
+      r.querySelector('.pw').textContent=fmt(w);
+      const d=r.querySelector('.pp');d.textContent=pnlTxt(w-cst);d.style.color=pnlCol(w-cst);
+    });
   });
   const t=document.getElementById('posTot');
-  if(t)t.innerHTML='Total paid <b>'+fmt(paid)+'</b> &middot; worth now <b>'+fmt(worth)+'</b> &middot; <b style="color:'+pnlCol(worth-paid)+'">'+pnlTxt(worth-paid)+'</b>';
+  if(t)t.innerHTML=cnt?'Your positions: paid <b>'+fmt(paid)+'</b> &middot; worth <b>'+fmt(worth)+'</b> &middot; <b style="color:'+pnlCol(worth-paid)+'">'+pnlTxt(worth-paid)+'</b>':'<span class="mute">No open positions</span>';
 }
-function renderPos(){
-  const el=$('#mkPos');
-  if(!S.pos.length){el.textContent='No open positions.';return}
-  el.innerHTML='<div id="posTot" class="mono" style="padding:4px 0 8px"></div>'+S.pos.map(p=>{const c=posCost(p);return'<div data-pr="'+esc(p.id)+'" style="padding:8px 0;border-bottom:1px solid var(--feltline)"><div><b>'+(p.side==='Y'?'YES':'NO')+'</b> x'+p.n+' at '+p.px+'\u00a2 &middot; '+esc(p.q)+'</div><div class="row sp" style="flex-wrap:wrap;margin-top:4px"><span class="mono" style="font-size:13px">Paid <b>'+fmt(c)+'</b> &middot; Worth now <b class="pw"></b> &middot; <b class="pp"></b> &middot; <span class="mute">pays '+fmt(p.n*100)+' if right</span></span><button class="btn sm" data-sell="'+esc(p.id)+'">Sell now</button></div></div>'}).join('');
-  renderMk();
-}
+function renderPos(){renderMk()}
 function renderRng(){
   const el=$('#mkRng');if(!el)return;el.textContent='';
   [2,5,10].forEach(r=>{const b=document.createElement('button');b.className='btn sm'+(r===mkRange?' primary':'');b.dataset.r=r;b.textContent=r+' min';el.append(b)});
@@ -297,7 +301,7 @@ $('#p-mk').addEventListener('click',e=>{
 });
 
 /* ---------- start ---------- */
-$('#mkGrid').insertAdjacentHTML('beforebegin','<div class="row" style="margin:0 0 12px"><label for="mkQty" class="mute">Contracts per trade</label><input id="mkQty" type="number" min="1" value="5" style="width:84px"><span class="mute" style="margin-left:10px">Chart</span><span id="mkRng" class="row" style="gap:6px"></span></div>');
+$('#mkGrid').insertAdjacentHTML('beforebegin','<div class="row" style="margin:0 0 12px"><label for="mkQty" class="mute">Contracts per trade</label><input id="mkQty" type="number" min="1" value="5" style="width:84px"><span class="mute" style="margin-left:10px">Chart</span><span id="mkRng" class="row" style="gap:6px"></span><span id="posTot" class="mono" style="margin-left:auto;font-size:14px"></span></div>');
 renderRng();
 showTab('tycoon');renderBj();renderVp();
 boot().then(()=>{mkTick();renderPos()});
