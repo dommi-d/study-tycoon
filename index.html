@@ -274,7 +274,7 @@ button.pc:hover:not(:disabled){transform:translateY(-4px) rotateX(4deg)}
         <li><b>Buy a tower</b> with chips, tap the map to place it beside the road, then tap it to upgrade (3 levels).</li>
         <li><b>Buy ammo.</b> Every shot uses ammo (shown on each tower card) and ammo costs chips. No ammo, no shooting.</li>
         <li><b>Send waves.</b> Pop a blob and it shrinks a size, so big ones take several hits. Wave 10 brings an airship that splits into blobs.</li>
-        <li><b>Win</b> all 10 waves and you get the chip prize <b>plus every chip you spent on towers, upgrades and ammo back</b>, so a win is pure profit, and you keep your towers and leftover ammo for the harder next round. <b>Lose</b> and every tower and every bit of ammo is gone, with no refund. Closing the page mid-round counts as a loss.</li>
+        <li><b>Win</b> all 10 waves to finish the round and collect the <b>round prize</b> (shown next to your lives). Every <b>5th round is a solar-prize round</b>: you also get back what you paid for every tower on your map. You keep your towers and leftover ammo for the harder next round. <b>Lose</b> and every tower and every bit of ammo is gone, with no prize. A round in progress is saved, so closing or reloading the page just pauses it.</li>
         <li><b>Need more chips?</b> Press Pause during a wave (the game freezes, and it also waits between waves). Start the timer at the top and study, then buy towers, upgrades and ammo with what you earn and press Resume. Switching to another tab also pauses it.</li>
       </ol>
     </details>
@@ -735,18 +735,25 @@ function tdStep(dt){
   }
 }
 /* ---- end of simulation core ---- */
-function tdWaveDone(){R.msg='Wave '+R.wave+' cleared.';tdRender();if(R.auto)R.autoT=1.4}
+const tdPrize=r=>250+150*r,tdSolar=r=>r%5===0;
+function tdSave(){
+  const td=S.td;if(!td||!td.live)return;
+  td.run={wave:R.wave,lives:R.lives,phase:R.phase,spawnT:R.spawnT,q:R.q,en:R.en.filter(e=>!e.dead).map(e=>({d:e.d,tier:e.tier,boss:e.boss,hp:e.hp,max:e.max,slow:e.slow,slowT:e.slowT}))};
+  touch();
+}
+function tdWaveDone(){tdSave();R.msg='Wave '+R.wave+' cleared.';tdRender();if(R.auto)R.autoT=1.4}
 function tdEnd(win){
   const td=S.td,r=td.round;
   R.paused=false;R.phase='idle';R.q=[];R.en=[];R.pr=[];R.wave=0;R.lives=TDLIVES;R.autoT=0;R.sel=null;R.place=null;
   if(win){
-    const prize=200+120*r,back=td.spent||0;td.live=false;td.round=r+1;td.wins=(td.wins||0)+1;td.spent=0;td.towers.forEach(t=>{t.sp=0});payout(prize+back,'td');
-    R.msg='Round '+r+' won! Prize '+fmt(prize)+' + '+fmt(back)+' refunded for everything you bought = +'+fmt(prize+back)+' chips. Your towers and leftover ammo carry on to round '+td.round+'.';
-    toast('Round won: +'+fmt(prize+back)+' chips');
+    const prize=tdPrize(r),solar=tdSolar(r),back=solar?td.towers.reduce((a,t)=>a+(t.sp||0),0):0;
+    td.live=false;td.run=null;td.round=r+1;td.wins=(td.wins||0)+1;td.spent=0;if(solar)td.towers.forEach(t=>{t.sp=0});payout(prize+back,'td');
+    R.msg=(solar?'SOLAR-PRIZE ROUND! ':'')+'Round '+r+' finished. Round prize '+fmt(prize)+(solar?' + '+fmt(back)+' back for the towers on your map':'')+' = +'+fmt(prize+back)+' chips. Your towers and leftover ammo carry on to round '+td.round+'.';
+    toast((solar?'Solar prize: +':'Round prize: +')+fmt(prize+back)+' chips');
   }else{
-    const lost=td.towers.length,am=td.ammo,sp=td.spent||0;
-    td.towers=[];td.ammo=0;td.live=false;td.spent=0;td.losses=(td.losses||0)+1;touch();
-    R.msg='Defeat. The smog broke through: you lost all '+lost+' towers and '+fmt(am)+' ammo, and the '+fmt(sp)+' chips you spent on items are not refunded.';
+    const lost=td.towers.length,am=td.ammo;
+    td.towers=[];td.ammo=0;td.live=false;td.run=null;td.spent=0;td.losses=(td.losses||0)+1;touch();
+    R.msg='Defeat. The smog broke through: you lost all '+lost+' towers and '+fmt(am)+' ammo, and there is no round prize.';
     toast('Defeat: towers and ammo lost');
   }
   touch();tdRender();
@@ -837,7 +844,7 @@ function tdStart(){
   const td=S.td;
   if(!td.towers.length){toast('Place at least one tower first');return}
   if(R.wave===0){td.live=true;R.lives=TDLIVES;flush()}
-  R.paused=false;R.phase='wave';R.q=tdGen(td.round,R.wave+1);R.spawnT=0;R.msg='';R.autoT=0;R.dry=false;tdRender();
+  R.paused=false;R.phase='wave';R.q=tdGen(td.round,R.wave+1);R.spawnT=0;R.msg='';R.autoT=0;R.dry=false;tdSave();tdRender();
 }
 function tdForfeit(){
   if(!S.td.live)return;
@@ -856,7 +863,7 @@ $('#p-td').addEventListener('click',e=>{
   }
   else if(d.tdTg){const t=S.td.towers.find(z=>z.id===R.sel);if(!t)return;t.tg=t.tg==='first'?'strong':t.tg==='strong'?'last':'first';touch();tdRender()}
   else if(d.tdGo)tdStart();
-  else if(d.tdPause){if(R.phase==='wave'){R.paused=!R.paused;tdRender()}}
+  else if(d.tdPause){if(R.phase==='wave'){R.paused=!R.paused;tdSave();tdRender()}}
   else if(d.tdSpeed){R.speed=R.speed>=3?1:R.speed+1;tdRender()}
   else if(d.tdAuto){R.auto=!R.auto;if(R.auto&&R.phase==='idle'&&R.wave>0)R.autoT=.8;tdRender()}
   else if(d.tdFf)tdForfeit();
@@ -886,9 +893,9 @@ function tdRender(){
 }
 let tdHudS='';
 function tdHud(){
-  const td=S.td,s='R'+td.round+'|'+(R.wave+(R.phase==='wave'?1:0))+'|'+R.lives+'|'+td.ammo+'|'+Math.floor(S.chips)+'|'+(td.spent||0);
+  const td=S.td,s='R'+td.round+'|'+(R.wave+(R.phase==='wave'?1:0))+'|'+R.lives+'|'+td.ammo+'|'+Math.floor(S.chips)+'|'+td.towers.reduce((a,t)=>a+(t.sp||0),0);
   if(s===tdHudS)return;tdHudS=s;
-  $('#tdStats').innerHTML='Round <b>'+td.round+'</b> &middot; Wave <b>'+Math.min(TDWAVES,R.wave+(R.phase==='wave'?1:0))+'/'+TDWAVES+'</b> &middot; Lives <b>'+R.lives+'</b> &middot; Ammo <b style="color:'+(td.ammo<30?'#ff9a8a':'#ffe066')+'">'+fmt(td.ammo)+'</b> &middot; Win pays <b>'+fmt(200+120*td.round)+'</b> + <b>'+fmt(td.spent||0)+'</b> refund';
+  $('#tdStats').innerHTML='Round <b>'+td.round+'</b> &middot; Wave <b>'+Math.min(TDWAVES,R.wave+(R.phase==='wave'?1:0))+'/'+TDWAVES+'</b> &middot; Lives <b>'+R.lives+'</b> &middot; Ammo <b style="color:'+(td.ammo<30?'#ff9a8a':'#ffe066')+'">'+fmt(td.ammo)+'</b> &middot; Round prize <b style="color:#ffe066">'+fmt(tdPrize(td.round))+'</b>'+(tdSolar(td.round)?' &middot; <b style="color:#ffb347">SOLAR-PRIZE ROUND: +'+fmt(td.towers.reduce((a,t)=>a+(t.sp||0),0))+' for your towers</b>':' &middot; <span class="mute">solar-prize round at round '+(Math.ceil(td.round/5)*5)+'</span>');
   document.querySelectorAll('[data-td-ammo]').forEach(b=>{b.disabled=Math.floor(S.chips)<TDAMMO[+b.dataset.tdAmmo][1]});
 }
 let tdLast=0;
@@ -899,16 +906,21 @@ function tdLoop(ts){
   if(!pane||pane.hidden||document.hidden||!S.td)return;
   if(R.phase==='wave'&&!R.paused){const n=Math.max(1,Math.ceil(dt*R.speed/.033)),h=dt*R.speed/n;for(let i=0;i<n;i++)if(R.phase==='wave')tdStep(h)}
   else if(R.autoT>0){R.autoT-=dt;if(R.autoT<=0&&R.auto)tdStart()}
+  R.saveT=(R.saveT||0)+dt;if(R.saveT>1){R.saveT=0;tdSave()}
   tdDraw();tdHud();
 }
 requestAnimationFrame(tdLoop);
-/* leaving the page mid-round counts as a loss, so the stakes are real */
+document.addEventListener('visibilitychange',()=>{if(document.hidden){tdSave();flush()}});
+window.addEventListener('pagehide',()=>{tdSave();flush()});
+/* a round in progress is saved, so reloads and updates pick up where you left off (paused until you press Resume) */
 function tdInit(){
-  if(S.td.live){
-    const td=S.td,lost=td.towers.length;
-    td.towers=[];td.ammo=0;td.spent=0;td.live=false;td.losses=(td.losses||0)+1;touch();
-    R.msg='You left in the middle of a round, which counts as a defeat. Your '+lost+' towers and all your ammo were lost.';
-  }
+  const td=S.td,run=td.run;
+  if(td.live&&run){
+    R.wave=run.wave;R.lives=run.lives;R.q=run.q||[];R.spawnT=run.spawnT||0;R.phase=run.phase||'idle';
+    R.en=(run.en||[]).map(o=>{const e=Object.assign({id:R.nid++,dead:false,x:0,y:0,slow:1,slowT:0},o);const p=tdPos(e.d);e.x=p[0];e.y=p[1];return e});
+    R.pr=[];R.fx=[];R.paused=R.phase==='wave';
+    R.msg=R.phase==='wave'?'Welcome back. Your round was saved and is paused. Press Resume when you are ready.':'Welcome back. Your round was saved. Send the next wave when you are ready.';
+  }else if(td.live){td.live=false;touch()}
   tdRender();
 }
 /* ---------- Chess: you play White against the house. Every move you make costs chips. ---------- */
