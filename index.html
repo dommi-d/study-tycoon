@@ -382,13 +382,14 @@ function mult(){if(!run)return 1;return sess<1500?1:sess<3000?1.25:sess<5400?1.5
 const BASE=10; /* chips per minute of focus */
 /* beating the immediately previous session pays a bonus that grows with how much longer this one is */
 function recBonus(){
-  const L=S.lastSess||0;if(!run||L<=0||sess<=L)return 0;
+  const L=S.lastSess||0;if(!run||L<90||sess<=L)return 0;
   const ex=sess-L,r=Math.min(5,ex/Math.max(L,60));
   return Math.round(BASE*(ex/60)*(.5+r));
 }
 function recUpdate(){
   const n=$('#recNote'),L=S.lastSess||0,b=recBonus();
-  if(!run||L<=0){n.textContent=L>0?'Last session: '+fmtT(L)+'. Beat it for a bonus.':'Your first session sets the time to beat.';}
+  if(L>0&&L<90)n.textContent='Last session was '+fmtT(L)+', under 1:30, so there is no record bonus this time.';
+  else if(!run||L<=0){n.textContent=L>0?'Last session: '+fmtT(L)+'. Beat it for a bonus.':'Your first session sets the time to beat.';}
   else if(b>0)n.innerHTML='Beating your last session ('+fmtT(L)+') by <b>'+fmtT(sess-L)+'</b>: bonus <b style="color:#ffe066">+'+fmt(b)+'</b> and growing.';
   else n.textContent='Last session: '+fmtT(L)+'. '+fmtT(L-sess)+' to go before the bonus starts.';
   if(!$('#recAsk').hidden){if(b>0)$('#recAskT').textContent='You are '+fmtT(sess-L)+' past your last session ('+fmtT(L)+'). Cash out +'+fmt(b)+' chips now and stop, or keep studying? The longer you go, the faster the bonus grows.';else $('#recAsk').hidden=true}

@@ -11,7 +11,7 @@ To host it, enable GitHub Pages for this repo and serve the `main` branch from t
 ## How it works
 
 - **Work to earn.** Start the timer to earn 10 chips a minute, with a focus multiplier that grows to x2 over a long session. Finished tasks, a daily goal and a day streak pay bonuses, and every business you build raises task pay by 10%.
-- **Record bonus.** Beating your previous session length earns a bonus that grows with how much longer you go. Stopping asks whether to cash out or keep studying.
+- **Record bonus.** Beating your previous session (if it lasted at least 1:30) earns a bonus that grows with how much longer you go. Stopping asks whether to cash out or keep studying.
 - **Tycoon.** Six businesses add chips per minute while the timer runs, and each one appears on the 3D island and upgrades at 3, 6 and 10 owned. The island's centerpiece grows with your total buys, from a sapling to a cabin, workshop, terrace tower, sun tower and finally a floating sun spire.
 - **Blackjack.** Pays 3:2, with hit, stand and double.
 - **Video poker.** Jacks or better, with a how-to-play guide in the room.
