@@ -65,7 +65,7 @@ function renderDesk(){
   const b=$('#startBtn');b.textContent=run?'Stop session':'Start working';b.className='btn '+(run?'stop':'primary');
   if(window.World)World.setRun(run);
   const lv=level();$('#rank').textContent='Rank '+lv+' · '+RANKS[lv-1];
-  $('#taskNote').textContent=S.since>=300?'Next finished task pays '+Math.round(60*m)+' chips.':'Work '+Math.ceil((300-S.since)/60)+' more min before the next finished task pays.';
+  $('#taskNote').textContent=S.since>=300?'Next finished task pays '+taskPay()+' chips'+(tyCount()?' (tycoon bonus x'+tyBonus().toFixed(1)+').':'.'):'Work '+Math.ceil((300-S.since)/60)+' more min before the next finished task pays.';
 }
 $('#startBtn').onclick=()=>{
   if(run){run=false;toast('Session over: '+dur(sess)+' logged');touch()}
@@ -87,7 +87,7 @@ function renderTasks(){
     const cb=document.createElement('input');cb.type='checkbox';cb.checked=k.done;cb.disabled=k.done;cb.setAttribute('aria-label','Finish task');
     cb.onchange=()=>{
       if(S.since<300){toast('Put in 5 minutes of work before this one pays.');cb.checked=false;return}
-      const r=Math.round(60*mult());S.since=0;k.done=true;earn(r,true);toast('Task done! +'+r+' chips');renderTasks();renderDesk();
+      const r=taskPay();S.since=0;k.done=true;earn(r,true);toast('Task done! +'+r+' chips');renderTasks();renderDesk();
     };
     const sp=document.createElement('span');sp.textContent=k.t;
     const x=document.createElement('button');x.className='btn sm';x.textContent='×';x.setAttribute('aria-label','Remove task');
@@ -108,10 +108,14 @@ const BIZ=[
 ];
 const cost=b=>Math.floor(b.c*Math.pow(1.15,S.own[b.id]||0));
 const tyRate=()=>BIZ.reduce((a,b)=>a+(S.own[b.id]||0)*b.r,0);
+/* every business you build raises what finished tasks pay by 10% */
+const tyCount=()=>BIZ.reduce((a,b)=>a+(S.own[b.id]||0),0);
+const tyBonus=()=>1+.1*tyCount();
+const taskPay=()=>Math.round(60*mult()*tyBonus());
 function renderTycoon(){
   const el=$('#p-tycoon');
   el.innerHTML='<div class="row sp"><h2>Tycoon</h2><span class="tag">+'+fmt(tyRate())+' chips/min while you work</span></div>'+
-  '<p class="mute" style="margin:0 0 14px">Your businesses only run while the work timer does. Idle empires earn nothing.</p><div class="biz-grid">'+
+  '<p class="mute" style="margin:0 0 14px">Your businesses only run while the work timer does. Idle empires earn nothing. Every business you build also raises what finished tasks pay by 10% (now <b>x'+tyBonus().toFixed(1)+'</b>, so a task pays '+fmt(taskPay())+').</p><div class="biz-grid">'+
   BIZ.map(b=>'<div class="biz"><div class="row sp"><h3>'+b.n+'</h3><span class="own">'+(S.own[b.id]||0)+'</span></div><span class="mute">'+b.d+'</span><span class="mono" style="font-size:13px">+'+fmt(b.r)+'/min each</span><button class="btn primary" data-buy="'+b.id+'">Buy for '+fmt(cost(b))+'</button></div>').join('')+'</div>';
   renderBal();if(window.World)World.sync();
 }
