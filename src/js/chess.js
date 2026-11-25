@@ -1,8 +1,8 @@
 /* ---------- Chess: you play White against the house. Every move you make costs chips. ---------- */
 const CHLV=[
-  {n:'Sprout (easy)',d:1,buy:100,fee:50,prize:2000,rnd:60},
-  {n:'Gardener (medium)',d:2,buy:250,fee:75,prize:4500,rnd:8},
-  {n:'Sage (hard)',d:3,buy:500,fee:100,prize:10000,rnd:0}
+  {n:'Sprout (easy)',d:1,buy:400,fee:100,prize:1500,rnd:60},
+  {n:'Gardener (medium)',d:2,buy:250,fee:75,prize:4000,rnd:8},
+  {n:'Sage (hard)',d:3,buy:100,fee:50,prize:10000,rnd:0}
 ];
 const CHV={P:100,N:320,B:330,R:500,Q:900,K:0};
 const CHG={P:'♟',N:'♞',B:'♝',R:'♜',Q:'♛',K:'♚'};
@@ -117,9 +117,11 @@ function chPick(g,lv){
 /* ---- screen ---- */
 let chSel=-1,chBusy=false;
 function chInit(){
-  const sel=$('#chLv');sel.innerHTML=CHLV.map((l,i)=>'<option value="'+i+'">'+l.n+': '+l.buy+' buy-in + '+l.fee+'/move, win '+l.prize+'</option>').join('');
+  const sel=$('#chLv');sel.innerHTML=CHLV.map((l,i)=>'<option value="'+i+'">'+l.n+': '+l.buy+' buy-in + '+l.fee+'/move, wins '+l.prize.toLocaleString('en-US')+'</option>').join('');
   sel.value=S.chess.lv||0;chRender();
 }
+/* the win prize is fixed until your move fees pass half of it, then it grows to repay every extra move */
+function chPrize(){const L=CHLV[S.chess.lv||0];return L.prize+Math.max(0,(S.chess.fees||0)-L.prize/2)}
 function chFee(){return CHLV[S.chess.lv||0].fee}
 function chRender(){
   const ch=S.chess;if(!ch)return;
@@ -127,7 +129,7 @@ function chRender(){
   const sel=$('#chLv');if(sel&&!ch.live)sel.disabled=false;if(sel&&ch.live)sel.disabled=true;
   $('#chRes').hidden=!ch.live;
   $('#chNew').textContent=ch.live?'Restart (forfeit)':'New game';
-  $('#chStats').innerHTML=(ch.live?'Paid so far <b>'+fmt(ch.paid)+'</b> &middot; ':'')+'Buy-in <b>'+CHLV[ch.lv||0].buy+'</b> &middot; Move fee <b>'+chFee()+'</b> &middot; Wins <b>'+(ch.wins||0)+'</b>';
+  $('#chStats').innerHTML=(ch.live?'Paid so far <b>'+fmt(ch.paid)+'</b> &middot; ':'')+'Buy-in <b>'+CHLV[ch.lv||0].buy+'</b> &middot; Move fee <b>'+chFee()+'</b> &middot; Win pays <b>'+fmt(chPrize())+'</b> &middot; Wins <b>'+(ch.wins||0)+'</b>';
   $('#chMsg').textContent=ch.msg||(g?'':'Press New game to start. You are White.');
   if(!g){bd.innerHTML='';return}
   const targets={};
@@ -141,8 +143,8 @@ function chRender(){
   bd.innerHTML=h;
 }
 function chFinish(res){
-  const ch=S.chess,lv=CHLV[ch.lv||0];ch.live=false;chSel=-1;
-  if(res==='win'){ch.wins=(ch.wins||0)+1;payout(lv.prize);ch.msg='Checkmate, you win! +'+fmt(lv.prize)+' chips.'}
+  const ch=S.chess;ch.live=false;chSel=-1;
+  if(res==='win'){const pz=chPrize();ch.wins=(ch.wins||0)+1;payout(pz);ch.msg='Checkmate, you win! +'+fmt(pz)+' chips.'}
   else if(res==='draw'){const back=Math.floor(ch.paid/2);if(back)payout(back);ch.msg='Draw. Half of everything you paid comes back: +'+fmt(back)+' chips.'}
   else if(res==='resign')ch.msg='You resigned. The buy-in and move fees ('+fmt(ch.paid)+' chips) are gone.';
   else ch.msg='Checkmate, the house wins. The buy-in and move fees ('+fmt(ch.paid)+' chips) are gone.';
@@ -174,7 +176,7 @@ $('#chBoard').addEventListener('click',e=>{
     if(m){
       const fee=chFee();
       if(Math.floor(S.chips)<fee){toast('Not enough chips: each move costs '+fee);return}
-      spend(fee);ch.paid+=fee;ch.g=chApply(g,m);chSel=-1;touch();
+      spend(fee);ch.paid+=fee;ch.fees=(ch.fees||0)+fee;ch.g=chApply(g,m);chSel=-1;touch();
       if(!chAfter())chHouse();
       return;
     }
@@ -186,7 +188,7 @@ $('#chNew').addEventListener('click',()=>{
   if(ch.live&&!ch._conf){ch._conf=1;$('#chNew').textContent='Tap again to forfeit and restart';setTimeout(()=>{ch._conf=0;chRender()},3000);return}
   ch._conf=0;const nl=+$('#chLv').value,L=CHLV[nl];
   if(Math.floor(S.chips)<L.buy+L.fee){toast('You need '+(L.buy+L.fee)+' chips: '+L.buy+' buy-in plus your first move ('+L.fee+')');return}
-  spend(L.buy);ch.lv=nl;ch.g=chNew();ch.live=true;ch.paid=L.buy;ch.msg='Buy-in paid ('+L.buy+'). Your move; each move costs '+L.fee+' chips.';chSel=-1;touch();chRender();
+  spend(L.buy);ch.lv=nl;ch.g=chNew();ch.live=true;ch.paid=L.buy;ch.fees=0;ch.msg='Buy-in paid ('+L.buy+'). Your move; each move costs '+L.fee+' chips.';chSel=-1;touch();chRender();
 });
 $('#chRes').addEventListener('click',()=>{if(!chBusy&&S.chess.live)chFinish('resign')});
 $('#chLv').addEventListener('change',()=>{if(!S.chess.live){S.chess.lv=+$('#chLv').value;touch();chRender()}});

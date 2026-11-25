@@ -16,7 +16,7 @@ To host it, enable GitHub Pages for this repo and serve the `main` branch from t
 - **Video poker.** Jacks or better, with a how-to-play guide in the room.
 - **Markets.** Every round lasts 5 minutes. Four repeating event questions (one continuous chart each) plus simulated BTC and Gold "above the strike" markets. Contracts pay 100 chips if right, with the Kalshi taker fee formula, 2 / 5 / 10 minute charts, and a fresh strike each round.
 - **Sun Guard (tower defense).** Five towers from easy to advanced, each bought with chips, and every shot uses ammo that also costs chips. Win a 10-wave round for a chip prize plus a full refund of everything you bought that round, and keep your towers and ammo. Lose, or leave mid-round, and all towers and ammo are gone.
-- **Chess.** You play White against the house at three levels. Each game has a chip buy-in and every move you make costs at least 50 chips. Checkmate pays a big prize, a draw refunds half of what you paid.
+- **Chess.** You play White against the house at three levels. Each game has a chip buy-in and every move costs at least 50 chips. The easy opponent is the most expensive and pays least, the hard one is cheapest and pays most. The prize grows to repay any move fees beyond half of it. A draw refunds half of what you paid.
 
 BTC and Gold prices are simulated (stochastic volatility with clustering and jumps), anchored near real levels. They are not live data.
 
