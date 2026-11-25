@@ -118,7 +118,13 @@ function chPick(g,lv){
 let chSel=-1,chBusy=false;
 function chInit(){
   const sel=$('#chLv');sel.innerHTML=CHLV.map((l,i)=>'<option value="'+i+'">'+l.n+': '+l.buy+' buy-in + '+l.fee+'/move, wins '+l.prize.toLocaleString('en-US')+'</option>').join('');
-  sel.value=S.chess.lv||0;chRender();
+  sel.value=S.chess.lv||0;
+  const ch=S.chess;
+  if(ch.live&&ch.g){
+    /* a game in progress is restored; if the page closed while the house was thinking, it plays its move now */
+    if(ch.g.turn==='b'){chHouse()}
+    else{ch.msg='Welcome back. Your game was saved. Your move.';chRender()}
+  }else chRender();
 }
 /* the win prize is fixed until your move fees pass half of it, then it grows to repay every extra move */
 function chPrize(){const L=CHLV[S.chess.lv||0];return L.prize+Math.max(0,(S.chess.fees||0)-L.prize/2)}
@@ -148,7 +154,7 @@ function chFinish(res){
   else if(res==='draw'){const back=Math.floor(ch.paid/2);if(back)payout(back,'ch');ch.msg='Draw. Half of everything you paid comes back: +'+fmt(back)+' chips.'}
   else if(res==='resign')ch.msg='You resigned. The buy-in and move fees ('+fmt(ch.paid)+' chips) are gone.';
   else ch.msg='Checkmate, the house wins. The buy-in and move fees ('+fmt(ch.paid)+' chips) are gone.';
-  touch();chRender();
+  touch();flush();chRender();
 }
 function chAfter(){
   const ch=S.chess,g=ch.g,st=chStatus(g);
@@ -163,7 +169,7 @@ function chHouse(){
       const m=chPick(ch.g,CHLV[ch.lv||0]);
       if(m)ch.g=chApply(ch.g,m);
     }catch(e){}
-    chBusy=false;touch();
+    chBusy=false;touch();flush();
     if(!chAfter())chRender();
   },60);
 }
@@ -176,7 +182,7 @@ $('#chBoard').addEventListener('click',e=>{
     if(m){
       const fee=chFee();
       if(Math.floor(S.chips)<fee){toast('Not enough chips: each move costs '+fee);return}
-      spend(fee,'ch');ch.paid+=fee;ch.fees=(ch.fees||0)+fee;ch.g=chApply(g,m);chSel=-1;touch();
+      spend(fee,'ch');ch.paid+=fee;ch.fees=(ch.fees||0)+fee;ch.g=chApply(g,m);chSel=-1;touch();flush();
       if(!chAfter())chHouse();
       return;
     }
@@ -188,7 +194,7 @@ $('#chNew').addEventListener('click',()=>{
   if(ch.live&&!ch._conf){ch._conf=1;$('#chNew').textContent='Tap again to forfeit and restart';setTimeout(()=>{ch._conf=0;chRender()},3000);return}
   ch._conf=0;const nl=+$('#chLv').value,L=CHLV[nl];
   if(Math.floor(S.chips)<L.buy+L.fee){toast('You need '+(L.buy+L.fee)+' chips: '+L.buy+' buy-in plus your first move ('+L.fee+')');return}
-  spend(L.buy,'ch');ch.lv=nl;ch.g=chNew();ch.live=true;ch.paid=L.buy;ch.fees=0;ch.msg='Buy-in paid ('+L.buy+'). Your move; each move costs '+L.fee+' chips.';chSel=-1;touch();chRender();
+  spend(L.buy,'ch');ch.lv=nl;ch.g=chNew();ch.live=true;ch.paid=L.buy;ch.fees=0;ch.msg='Buy-in paid ('+L.buy+'). Your move; each move costs '+L.fee+' chips.';chSel=-1;touch();flush();chRender();
 });
 $('#chRes').addEventListener('click',()=>{if(!chBusy&&S.chess.live)chFinish('resign')});
 $('#chLv').addEventListener('change',()=>{if(!S.chess.live){S.chess.lv=+$('#chLv').value;touch();chRender()}});

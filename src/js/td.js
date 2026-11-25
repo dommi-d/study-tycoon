@@ -128,9 +128,9 @@ const tdPrize=r=>250+150*r,tdSolar=r=>r%5===0;
 function tdSave(){
   const td=S.td;if(!td||!td.live)return;
   td.run={wave:R.wave,lives:R.lives,phase:R.phase,spawnT:R.spawnT,q:R.q,en:R.en.filter(e=>!e.dead).map(e=>({d:e.d,tier:e.tier,boss:e.boss,hp:e.hp,max:e.max,slow:e.slow,slowT:e.slowT}))};
-  touch();
+  touch();localSave();
 }
-function tdWaveDone(){tdSave();R.msg='Wave '+R.wave+' cleared.';tdRender();if(R.auto)R.autoT=1.4}
+function tdWaveDone(){tdSave();flush();R.msg='Wave '+R.wave+' cleared.';tdRender();if(R.auto)R.autoT=1.4}
 function tdEnd(win){
   const td=S.td,r=td.round;
   R.paused=false;R.phase='idle';R.q=[];R.en=[];R.pr=[];R.wave=0;R.lives=TDLIVES;R.autoT=0;R.sel=null;R.place=null;
@@ -233,7 +233,7 @@ function tdStart(){
   const td=S.td;
   if(!td.towers.length){toast('Place at least one tower first');return}
   if(R.wave===0){td.live=true;R.lives=TDLIVES;flush()}
-  R.paused=false;R.phase='wave';R.q=tdGen(td.round,R.wave+1);R.spawnT=0;R.msg='';R.autoT=0;R.dry=false;tdSave();tdRender();
+  R.paused=false;R.phase='wave';R.q=tdGen(td.round,R.wave+1);R.spawnT=0;R.msg='';R.autoT=0;R.dry=false;tdSave();flush();tdRender();
 }
 function tdForfeit(){
   if(!S.td.live)return;
