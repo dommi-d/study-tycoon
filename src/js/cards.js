@@ -32,14 +32,14 @@ function bjEnd(kind){
   else if(kind==='push'){back=B.bet;t='Push. Bet returned.'}
   else if(kind==='bust'){t='Bust. -'+fmt(B.bet);cls='loss'}
   else{t='Dealer wins. -'+fmt(B.bet);cls='loss'}
-  if(back)payout(back);
+  if(back)payout(back,'bj');
   if(cls==='win')S.bj.w++;else if(cls==='loss')S.bj.l++;
   touch();bjMsg(t,cls);renderBj();
 }
 function bjDraw(h){h.push(B.deck.pop())}
 function bjDeal(){
   if(B.live)return;const bet=getBet('bjBet');if(!bet)return;
-  spend(bet);B.bet=bet;B.deck=newDeck();B.p=[];B.d=[];
+  spend(bet,'bj');B.bet=bet;B.deck=newDeck();B.p=[];B.d=[];
   bjDraw(B.p);bjDraw(B.d);bjDraw(B.p);bjDraw(B.d);B.live=true;bjMsg('');
   const pb=bjVal(B.p)===21,db=bjVal(B.d)===21;
   if(pb||db){renderBj();bjEnd(pb&&db?'push':pb?'bj':'lose');return}
@@ -60,7 +60,7 @@ function bjHit(){
 }
 function bjDouble(){
   if(!(B.live&&B.p.length===2&&Math.floor(S.chips)>=B.bet))return;
-  spend(B.bet);B.bet*=2;bjDraw(B.p);
+  spend(B.bet,'bj');B.bet*=2;bjDraw(B.p);
   if(bjVal(B.p)>21){B.live=false;renderBj();bjEnd('bust')}else bjStand();
 }
 $('#bjDeal').onclick=bjDeal;$('#bjHit').onclick=bjHit;$('#bjStand').onclick=bjStand;$('#bjDbl').onclick=bjDouble;
@@ -103,12 +103,12 @@ function vpMsg(t,cls){const m=$('#vpMsg');m.textContent=t;m.className='msg '+(cl
 function vpGo(){
   if(V.phase===0){
     const bet=getBet('vpBet');if(!bet)return;
-    spend(bet);V.bet=bet;V.deck=newDeck();V.hand=V.deck.splice(0,5);V.held=[false,false,false,false,false];V.phase=1;V.hit=-1;
+    spend(bet,'vp');V.bet=bet;V.deck=newDeck();V.hand=V.deck.splice(0,5);V.held=[false,false,false,false,false];V.phase=1;V.hit=-1;
     vpMsg('Tap the cards you want to keep, then draw.');
   }else{
     for(let i=0;i<5;i++)if(!V.held[i])V.hand[i]=V.deck.pop();
     V.phase=0;V.hit=vpEval(V.hand);
-    if(V.hit>=0){const w=V.bet*VP[V.hit][1];payout(w);vpMsg(VP[V.hit][0]+'! '+(w>V.bet?'+'+fmt(w-V.bet):'Bet returned'),'win')}
+    if(V.hit>=0){const w=V.bet*VP[V.hit][1];payout(w,'vp');vpMsg(VP[V.hit][0]+'! '+(w>V.bet?'+'+fmt(w-V.bet):'Bet returned'),'win')}
     else vpMsg('No winning hand. -'+fmt(V.bet),'loss');
     V.held=[false,false,false,false,false];
   }

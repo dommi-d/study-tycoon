@@ -144,8 +144,8 @@ function chRender(){
 }
 function chFinish(res){
   const ch=S.chess;ch.live=false;chSel=-1;
-  if(res==='win'){const pz=chPrize();ch.wins=(ch.wins||0)+1;payout(pz);ch.msg='Checkmate, you win! +'+fmt(pz)+' chips.'}
-  else if(res==='draw'){const back=Math.floor(ch.paid/2);if(back)payout(back);ch.msg='Draw. Half of everything you paid comes back: +'+fmt(back)+' chips.'}
+  if(res==='win'){const pz=chPrize();ch.wins=(ch.wins||0)+1;payout(pz,'ch');ch.msg='Checkmate, you win! +'+fmt(pz)+' chips.'}
+  else if(res==='draw'){const back=Math.floor(ch.paid/2);if(back)payout(back,'ch');ch.msg='Draw. Half of everything you paid comes back: +'+fmt(back)+' chips.'}
   else if(res==='resign')ch.msg='You resigned. The buy-in and move fees ('+fmt(ch.paid)+' chips) are gone.';
   else ch.msg='Checkmate, the house wins. The buy-in and move fees ('+fmt(ch.paid)+' chips) are gone.';
   touch();chRender();
@@ -176,7 +176,7 @@ $('#chBoard').addEventListener('click',e=>{
     if(m){
       const fee=chFee();
       if(Math.floor(S.chips)<fee){toast('Not enough chips: each move costs '+fee);return}
-      spend(fee);ch.paid+=fee;ch.fees=(ch.fees||0)+fee;ch.g=chApply(g,m);chSel=-1;touch();
+      spend(fee,'ch');ch.paid+=fee;ch.fees=(ch.fees||0)+fee;ch.g=chApply(g,m);chSel=-1;touch();
       if(!chAfter())chHouse();
       return;
     }
@@ -188,7 +188,7 @@ $('#chNew').addEventListener('click',()=>{
   if(ch.live&&!ch._conf){ch._conf=1;$('#chNew').textContent='Tap again to forfeit and restart';setTimeout(()=>{ch._conf=0;chRender()},3000);return}
   ch._conf=0;const nl=+$('#chLv').value,L=CHLV[nl];
   if(Math.floor(S.chips)<L.buy+L.fee){toast('You need '+(L.buy+L.fee)+' chips: '+L.buy+' buy-in plus your first move ('+L.fee+')');return}
-  spend(L.buy);ch.lv=nl;ch.g=chNew();ch.live=true;ch.paid=L.buy;ch.fees=0;ch.msg='Buy-in paid ('+L.buy+'). Your move; each move costs '+L.fee+' chips.';chSel=-1;touch();chRender();
+  spend(L.buy,'ch');ch.lv=nl;ch.g=chNew();ch.live=true;ch.paid=L.buy;ch.fees=0;ch.msg='Buy-in paid ('+L.buy+'). Your move; each move costs '+L.fee+' chips.';chSel=-1;touch();chRender();
 });
 $('#chRes').addEventListener('click',()=>{if(!chBusy&&S.chess.live)chFinish('resign')});
 $('#chLv').addEventListener('change',()=>{if(!S.chess.live){S.chess.lv=+$('#chLv').value;touch();chRender()}});

@@ -3,7 +3,7 @@ const fmt=n=>Math.floor(n).toLocaleString('en-US');
 const ds=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const today=()=>ds(new Date());
 const yesterday=()=>ds(new Date(Date.now()-864e5));
-const DEF=()=>({chips:100,earned:0,secs:0,since:0,day:today(),todaySecs:0,goal:120,streak:0,lastGoalDay:'',tasks:[],own:{},bj:{w:0,l:0},mk:[],pos:[],td:{round:1,ammo:0,spent:0,towers:[],live:false,wins:0,losses:0},chess:{g:null,live:false,paid:0,wins:0,lv:0,msg:""},savedAt:0});
+const DEF=()=>({chips:100,earned:0,secs:0,since:0,day:today(),todaySecs:0,goal:120,streak:0,lastGoalDay:'',tasks:[],own:{},bj:{w:0,l:0},mk:[],pos:[],td:{round:1,ammo:0,spent:0,towers:[],live:false,wins:0,losses:0},chess:{g:null,live:false,paid:0,wins:0,lv:0,msg:""},st:{by:{},back:{}},savedAt:0});
 let S=DEF(),dirty=false;
 const touch=()=>{dirty=true};
 let tt;
@@ -12,12 +12,15 @@ function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');cl
 /* ---------- chips ---------- */
 function renderBal(up){
   $('#chips').textContent=fmt(S.chips);
+  if(typeof statsRender==='function')statsRender();
   if(up){const b=$('#bal');b.classList.remove('up');void b.offsetWidth;b.classList.add('up')}
   document.querySelectorAll('[data-buy]').forEach(b=>{const x=BIZ.find(z=>z.id===b.dataset.buy);b.disabled=cost(x)>Math.floor(S.chips)});
 }
 function earn(n,loud){S.chips+=n;S.earned+=n;touch();renderBal(loud);if(loud&&window.World)World.burst(14)}
-function spend(n){S.chips-=n;touch();renderBal()}
-function payout(n){S.chips+=n;touch();renderBal(true);if(n>0&&window.World)World.burst(Math.min(24,5+Math.floor(n/60)))}
+const CATS={tycoon:'Tycoon',bj:'Blackjack',vp:'Video poker',mk:'Markets',td:'Sun Guard',ch:'Chess'};
+const stat=()=>S.st||(S.st={by:{},back:{}});
+function spend(n,c){S.chips-=n;if(c){const o=stat().by;o[c]=(o[c]||0)+n}touch();renderBal()}
+function payout(n,c){S.chips+=n;if(c){const o=stat().back;o[c]=(o[c]||0)+n}touch();renderBal(true);if(n>0&&window.World)World.burst(Math.min(24,5+Math.floor(n/60)))}
 function getBet(id){
   const v=Math.floor(+$('#'+id).value);
   if(!(v>=1)){toast('Enter a bet of at least 1');return 0}
@@ -116,7 +119,7 @@ $('#p-tycoon').addEventListener('click',e=>{
   const b=e.target.closest('[data-buy]');if(!b)return;
   const x=BIZ.find(z=>z.id===b.dataset.buy),c=cost(x);
   if(c>Math.floor(S.chips)){toast('Not enough chips');return}
-  spend(c);S.own[x.id]=(S.own[x.id]||0)+1;toast(x.n+' purchased');renderTycoon();renderDesk();
+  spend(c,'tycoon');S.own[x.id]=(S.own[x.id]||0)+1;toast(x.n+' purchased');renderTycoon();renderDesk();
 });
 
 /* ---------- tabs ---------- */
@@ -138,7 +141,7 @@ function flush(){if(!dirty)return;localSave();if(saving)return;dirty=false;cloud
 setInterval(flush,6000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
 window.addEventListener('pagehide',flush);
-const adopt=o=>{S=Object.assign(DEF(),o);if(!S.bj)S.bj={w:0,l:0};if(!S.td)S.td=DEF().td;if(!S.chess)S.chess=DEF().chess};
+const adopt=o=>{S=Object.assign(DEF(),o);if(!S.bj)S.bj={w:0,l:0};if(!S.td)S.td=DEF().td;if(!S.chess)S.chess=DEF().chess;if(!S.st)S.st={by:{},back:{}}};
 function renderAll(){renderBal();renderDesk();renderTasks();renderTycoon();$('#goalIn').value=S.goal;renderMk();renderPos();if(typeof tdRender==='function')tdRender();if(typeof chRender==='function')chRender()}
 async function boot(){
   let local=null;try{local=JSON.parse(localStorage.getItem('studystakes'))}catch(e){}
@@ -158,3 +161,27 @@ async function boot(){
     }
   }catch(e){}
 }
+
+/* ---------- side stats menu (starts closed) ---------- */
+const sideBody=$('#sideBody'),sideBtn=$('#sideBtn');
+function statsRender(){
+  if(sideBody.hidden)return;
+  const st=stat(),by=st.by||{},back=st.back||{};
+  const spent=Object.keys(by).reduce((a,k)=>a+by[k],0),won=Object.keys(back).reduce((a,k)=>a+back[k],0);
+  const max=Math.max(1,...Object.keys(CATS).map(k=>by[k]||0));
+  const row=(a,b,c)=>'<div class="row sp" style="padding:3px 0"><span>'+a+'</span><b class="mono"'+(c?' style="color:'+c+'"':'')+'>'+b+'</b></div>';
+  sideBody.innerHTML='<h3>Chip stats</h3>'+
+    row('Earned from working',fmt(S.earned))+
+    row('Won back from games',fmt(won))+
+    row('Total earned',fmt(S.earned+won),'#3fe6d2')+
+    row('Total spent',fmt(spent),'#ffb199')+
+    row('Balance now',fmt(S.chips))+
+    '<h3 style="margin-top:14px">Where it went</h3>'+
+    Object.keys(CATS).map(k=>{const sp=by[k]||0,bk=back[k]||0,net=bk-sp;
+      return'<div class="st-row"><span>'+CATS[k]+'</span><b class="mono">'+fmt(sp)+' spent</b><span class="mute" style="font-size:12px">returned '+fmt(bk)+'</span><span class="mono" style="font-size:12px;color:'+(net>=0?'#3fe6d2':'#ff9a8a')+'">'+(net>=0?'+':'-')+fmt(Math.abs(net))+' net</span><div class="st-bar"><i style="width:'+Math.round((sp/max)*100)+'%"></i></div></div>'}).join('')+
+    '<p class="mute" style="font-size:12px;margin:10px 0 0">Spending is tracked from this feature on, so earlier purchases are not included.</p>';
+}
+sideBtn.addEventListener('click',()=>{
+  sideBody.hidden=!sideBody.hidden;sideBtn.setAttribute('aria-expanded',String(!sideBody.hidden));
+  sideBtn.textContent=sideBody.hidden?'Stats':'Close';statsRender();
+});

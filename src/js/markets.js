@@ -118,7 +118,7 @@ const posCost=p=>p.cost!=null?p.cost:p.n*p.px;
 function refundOld(m){
   const mine=S.pos.filter(p=>p.mid===m.id);if(!mine.length)return;
   let back=0;mine.forEach(p=>{back+=posCost(p)});
-  S.pos=S.pos.filter(p=>p.mid!==m.id);payout(back);touch();renderPos();
+  S.pos=S.pos.filter(p=>p.mid!==m.id);payout(back,'mk');touch();renderPos();
   toast('A market was replaced. Your bet was refunded: '+fmt(back));
 }
 /* decide the round: event markets draw from the final price and the chart jumps to 100 or 0 */
@@ -135,7 +135,7 @@ function settleMk(m,out){
   let tot=0,cost=0;
   mine.forEach(p=>{cost+=posCost(p);if((p.side==='Y')===out)tot+=p.n*100});
   S.pos=S.pos.filter(p=>p.mid!==m.id);
-  if(tot)payout(tot);
+  if(tot)payout(tot,'mk');
   touch();renderPos();
   const net=tot-cost;
   toast(detail+'Settled '+(out?'YES':'NO')+': '+(net>=0?'+':'-')+fmt(Math.abs(net))+' chips');
@@ -289,14 +289,14 @@ $('#p-mk').addEventListener('click',e=>{
     if(m.end-Date.now()<5000){toast('Trading is closed for this round');return}
     const ask=side==='Y'?askY(m):askN(m),fee=feeC(qty,ask),total=qty*ask+fee;
     if(total>Math.floor(S.chips)){toast('Not enough chips: that costs '+fmt(total));return}
-    spend(total);S.pos.push({id:rid(),mid:m.id,q:m.kind==='e'?m.q+' ('+m.rd+')':m.q,side,n:qty,px:ask,fee,cost:total});
+    spend(total,'mk');S.pos.push({id:rid(),mid:m.id,q:m.kind==='e'?m.q+' ('+m.rd+')':m.q,side,n:qty,px:ask,fee,cost:total});
     touch();renderPos();
     toast('Bought '+qty+' '+(side==='Y'?'YES':'NO')+' at '+ask+'¢ for '+fmt(total)+' (fee '+fee+'). Right: +'+fmt(qty*100-total)+', wrong: -'+fmt(total));
   }else if(sb){
     const p=S.pos.find(z=>z.id===sb.dataset.sell),m=p&&S.mk.find(z=>z&&z.id===p.mid);
     if(!p||!m)return;
     const bid=p.side==='Y'?bidY(m):bidN(m),v=Math.max(0,p.n*bid-feeC(p.n,bid));
-    S.pos=S.pos.filter(z=>z!==p);payout(v);touch();renderPos();toast('Sold for '+fmt(v)+' (paid '+fmt(posCost(p))+')');
+    S.pos=S.pos.filter(z=>z!==p);payout(v,'mk');touch();renderPos();toast('Sold for '+fmt(v)+' (paid '+fmt(posCost(p))+')');
   }
 });
 

@@ -129,7 +129,7 @@ function tdEnd(win){
   const td=S.td,r=td.round;
   R.paused=false;R.phase='idle';R.q=[];R.en=[];R.pr=[];R.wave=0;R.lives=TDLIVES;R.autoT=0;R.sel=null;R.place=null;
   if(win){
-    const prize=200+120*r,back=td.spent||0;td.live=false;td.round=r+1;td.wins=(td.wins||0)+1;td.spent=0;td.towers.forEach(t=>{t.sp=0});payout(prize+back);
+    const prize=200+120*r,back=td.spent||0;td.live=false;td.round=r+1;td.wins=(td.wins||0)+1;td.spent=0;td.towers.forEach(t=>{t.sp=0});payout(prize+back,'td');
     R.msg='Round '+r+' won! Prize '+fmt(prize)+' + '+fmt(back)+' refunded for everything you bought = +'+fmt(prize+back)+' chips. Your towers and leftover ammo carry on to round '+td.round+'.';
     toast('Round won: +'+fmt(prize+back)+' chips');
   }else{
@@ -213,7 +213,7 @@ tdCv.addEventListener('click',e=>{
     const K=TDK[R.place];
     if(!tdCanPlace(p.x,p.y)){toast('Not here: keep towers off the path and apart');return}
     if(Math.floor(S.chips)<K.c){toast('Not enough chips: '+K.n+' costs '+K.c);return}
-    spend(K.c);S.td.spent=(S.td.spent||0)+K.c;const t={id:R.nid++,k:R.place,x:p.x,y:p.y,lv:1,tg:'first',sp:K.c,cd:0,a:0};
+    spend(K.c,'td');S.td.spent=(S.td.spent||0)+K.c;const t={id:R.nid++,k:R.place,x:p.x,y:p.y,lv:1,tg:'first',sp:K.c,cd:0,a:0};
     S.td.towers.push(t);R.sel=t.id;
     if(S.chips<K.c)R.place=null;
     touch();tdRender();return;
@@ -237,11 +237,11 @@ $('#p-td').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
   const d=b.dataset;
   if(d.tdShop){R.place=R.place===d.tdShop?null:d.tdShop;R.sel=null;tdRender()}
-  else if(d.tdAmmo){const o=TDAMMO[+d.tdAmmo];if(Math.floor(S.chips)<o[1]){toast('Not enough chips');return}spend(o[1]);S.td.spent=(S.td.spent||0)+o[1];S.td.ammo+=o[0];touch();R.dry=false;tdRender()}
-  else if(d.tdUp){const t=S.td.towers.find(z=>z.id===R.sel);if(!t)return;const c=tdUpCost(t);if(!c)return;if(Math.floor(S.chips)<c){toast('Not enough chips');return}spend(c);S.td.spent=(S.td.spent||0)+c;t.lv++;t.sp+=c;touch();tdRender()}
+  else if(d.tdAmmo){const o=TDAMMO[+d.tdAmmo];if(Math.floor(S.chips)<o[1]){toast('Not enough chips');return}spend(o[1],'td');S.td.spent=(S.td.spent||0)+o[1];S.td.ammo+=o[0];touch();R.dry=false;tdRender()}
+  else if(d.tdUp){const t=S.td.towers.find(z=>z.id===R.sel);if(!t)return;const c=tdUpCost(t);if(!c)return;if(Math.floor(S.chips)<c){toast('Not enough chips');return}spend(c,'td');S.td.spent=(S.td.spent||0)+c;t.lv++;t.sp+=c;touch();tdRender()}
   else if(d.tdSell){
     const t=S.td.towers.find(z=>z.id===R.sel);if(!t||S.td.live)return;
-    const v=Math.floor(t.sp*.6);S.td.spent=Math.max(0,(S.td.spent||0)-t.sp);S.td.towers=S.td.towers.filter(z=>z!==t);R.sel=null;payout(v);touch();tdRender();toast('Sold for '+fmt(v))
+    const v=Math.floor(t.sp*.6);S.td.spent=Math.max(0,(S.td.spent||0)-t.sp);S.td.towers=S.td.towers.filter(z=>z!==t);R.sel=null;payout(v,'td');touch();tdRender();toast('Sold for '+fmt(v))
   }
   else if(d.tdTg){const t=S.td.towers.find(z=>z.id===R.sel);if(!t)return;t.tg=t.tg==='first'?'strong':t.tg==='strong'?'last':'first';touch();tdRender()}
   else if(d.tdGo)tdStart();

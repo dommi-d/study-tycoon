@@ -85,6 +85,12 @@ ul.tasks{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
 .chsq.cap::after{content:"";inset:6%;border-radius:50%;border:4px solid rgba(255,90,70,.9);position:absolute}
 .chsq.last{box-shadow:inset 0 0 0 100px rgba(255,230,90,.35)}
 .chw{color:#fff;text-shadow:0 0 2px #000,0 0 2px #000,0 1px 3px #000}.chb{color:#0a2a33}
+.side{position:fixed;right:0;top:96px;z-index:30;display:flex;align-items:flex-start;padding-right:env(safe-area-inset-right,0px)}
+.side-tab{font:400 15px var(--disp);writing-mode:vertical-rl;padding:14px 8px;border:2px solid #ffc21a;border-right:0;border-radius:14px 0 0 14px;background:rgba(3,34,54,.95);color:#ffe066;cursor:pointer;box-shadow:-3px 4px 0 rgba(0,0,0,.3)}
+.side-body{order:-1;width:min(330px,calc(100vw - 54px));max-height:calc(100vh - 120px);overflow:auto;background:rgba(3,34,54,.97);color:#fff;border:2px solid #ffc21a;border-radius:16px 0 0 16px;padding:14px;box-shadow:-4px 6px 0 rgba(0,0,0,.3)}
+.side-body h3{margin:0 0 8px;font:400 18px var(--disp);color:#ffe066}
+.st-row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.15);font-size:14px}
+.st-bar{grid-column:1/-1;height:6px;background:rgba(255,255,255,.12);border-radius:9px;overflow:hidden}.st-bar i{display:block;height:100%;background:#ffc21a}
 .mk h3{margin:0;font:400 17px/1.25 var(--disp)}
 .hand{display:flex;gap:10px;flex-wrap:wrap;min-height:90px;align-items:center;perspective:600px}
 .pc{width:56px;height:80px;background:linear-gradient(160deg,#fff,var(--card));color:var(--cardink);border-radius:10px;display:grid;place-items:center;font:400 24px var(--disp);box-shadow:0 5px 0 #b9b08a,0 10px 14px rgba(0,0,0,.4);position:relative;transform:rotateX(14deg);transition:transform .15s;border:2px solid #1a1a2e}
@@ -296,6 +302,10 @@ button.pc:hover:not(:disabled){transform:translateY(-4px) rotateX(4deg)}
 
 <p class="foot">Play money only. Chips come from time at your desk and finished tasks, and nothing here touches real cash. Progress saves automatically.</p>
 </div>
+<aside class="side" id="side" aria-label="Chip stats">
+  <button class="side-tab" id="sideBtn" aria-expanded="false" aria-controls="sideBody">Stats</button>
+  <div class="side-body" id="sideBody" hidden></div>
+</aside>
 <div class="toast" id="toast" role="status"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -304,7 +314,7 @@ const fmt=n=>Math.floor(n).toLocaleString('en-US');
 const ds=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const today=()=>ds(new Date());
 const yesterday=()=>ds(new Date(Date.now()-864e5));
-const DEF=()=>({chips:100,earned:0,secs:0,since:0,day:today(),todaySecs:0,goal:120,streak:0,lastGoalDay:'',tasks:[],own:{},bj:{w:0,l:0},mk:[],pos:[],td:{round:1,ammo:0,spent:0,towers:[],live:false,wins:0,losses:0},chess:{g:null,live:false,paid:0,wins:0,lv:0,msg:""},savedAt:0});
+const DEF=()=>({chips:100,earned:0,secs:0,since:0,day:today(),todaySecs:0,goal:120,streak:0,lastGoalDay:'',tasks:[],own:{},bj:{w:0,l:0},mk:[],pos:[],td:{round:1,ammo:0,spent:0,towers:[],live:false,wins:0,losses:0},chess:{g:null,live:false,paid:0,wins:0,lv:0,msg:""},st:{by:{},back:{}},savedAt:0});
 let S=DEF(),dirty=false;
 const touch=()=>{dirty=true};
 let tt;
@@ -313,12 +323,15 @@ function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');cl
 /* ---------- chips ---------- */
 function renderBal(up){
   $('#chips').textContent=fmt(S.chips);
+  if(typeof statsRender==='function')statsRender();
   if(up){const b=$('#bal');b.classList.remove('up');void b.offsetWidth;b.classList.add('up')}
   document.querySelectorAll('[data-buy]').forEach(b=>{const x=BIZ.find(z=>z.id===b.dataset.buy);b.disabled=cost(x)>Math.floor(S.chips)});
 }
 function earn(n,loud){S.chips+=n;S.earned+=n;touch();renderBal(loud);if(loud&&window.World)World.burst(14)}
-function spend(n){S.chips-=n;touch();renderBal()}
-function payout(n){S.chips+=n;touch();renderBal(true);if(n>0&&window.World)World.burst(Math.min(24,5+Math.floor(n/60)))}
+const CATS={tycoon:'Tycoon',bj:'Blackjack',vp:'Video poker',mk:'Markets',td:'Sun Guard',ch:'Chess'};
+const stat=()=>S.st||(S.st={by:{},back:{}});
+function spend(n,c){S.chips-=n;if(c){const o=stat().by;o[c]=(o[c]||0)+n}touch();renderBal()}
+function payout(n,c){S.chips+=n;if(c){const o=stat().back;o[c]=(o[c]||0)+n}touch();renderBal(true);if(n>0&&window.World)World.burst(Math.min(24,5+Math.floor(n/60)))}
 function getBet(id){
   const v=Math.floor(+$('#'+id).value);
   if(!(v>=1)){toast('Enter a bet of at least 1');return 0}
@@ -417,7 +430,7 @@ $('#p-tycoon').addEventListener('click',e=>{
   const b=e.target.closest('[data-buy]');if(!b)return;
   const x=BIZ.find(z=>z.id===b.dataset.buy),c=cost(x);
   if(c>Math.floor(S.chips)){toast('Not enough chips');return}
-  spend(c);S.own[x.id]=(S.own[x.id]||0)+1;toast(x.n+' purchased');renderTycoon();renderDesk();
+  spend(c,'tycoon');S.own[x.id]=(S.own[x.id]||0)+1;toast(x.n+' purchased');renderTycoon();renderDesk();
 });
 
 /* ---------- tabs ---------- */
@@ -439,7 +452,7 @@ function flush(){if(!dirty)return;localSave();if(saving)return;dirty=false;cloud
 setInterval(flush,6000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
 window.addEventListener('pagehide',flush);
-const adopt=o=>{S=Object.assign(DEF(),o);if(!S.bj)S.bj={w:0,l:0};if(!S.td)S.td=DEF().td;if(!S.chess)S.chess=DEF().chess};
+const adopt=o=>{S=Object.assign(DEF(),o);if(!S.bj)S.bj={w:0,l:0};if(!S.td)S.td=DEF().td;if(!S.chess)S.chess=DEF().chess;if(!S.st)S.st={by:{},back:{}}};
 function renderAll(){renderBal();renderDesk();renderTasks();renderTycoon();$('#goalIn').value=S.goal;renderMk();renderPos();if(typeof tdRender==='function')tdRender();if(typeof chRender==='function')chRender()}
 async function boot(){
   let local=null;try{local=JSON.parse(localStorage.getItem('studystakes'))}catch(e){}
@@ -459,6 +472,30 @@ async function boot(){
     }
   }catch(e){}
 }
+
+/* ---------- side stats menu (starts closed) ---------- */
+const sideBody=$('#sideBody'),sideBtn=$('#sideBtn');
+function statsRender(){
+  if(sideBody.hidden)return;
+  const st=stat(),by=st.by||{},back=st.back||{};
+  const spent=Object.keys(by).reduce((a,k)=>a+by[k],0),won=Object.keys(back).reduce((a,k)=>a+back[k],0);
+  const max=Math.max(1,...Object.keys(CATS).map(k=>by[k]||0));
+  const row=(a,b,c)=>'<div class="row sp" style="padding:3px 0"><span>'+a+'</span><b class="mono"'+(c?' style="color:'+c+'"':'')+'>'+b+'</b></div>';
+  sideBody.innerHTML='<h3>Chip stats</h3>'+
+    row('Earned from working',fmt(S.earned))+
+    row('Won back from games',fmt(won))+
+    row('Total earned',fmt(S.earned+won),'#3fe6d2')+
+    row('Total spent',fmt(spent),'#ffb199')+
+    row('Balance now',fmt(S.chips))+
+    '<h3 style="margin-top:14px">Where it went</h3>'+
+    Object.keys(CATS).map(k=>{const sp=by[k]||0,bk=back[k]||0,net=bk-sp;
+      return'<div class="st-row"><span>'+CATS[k]+'</span><b class="mono">'+fmt(sp)+' spent</b><span class="mute" style="font-size:12px">returned '+fmt(bk)+'</span><span class="mono" style="font-size:12px;color:'+(net>=0?'#3fe6d2':'#ff9a8a')+'">'+(net>=0?'+':'-')+fmt(Math.abs(net))+' net</span><div class="st-bar"><i style="width:'+Math.round((sp/max)*100)+'%"></i></div></div>'}).join('')+
+    '<p class="mute" style="font-size:12px;margin:10px 0 0">Spending is tracked from this feature on, so earlier purchases are not included.</p>';
+}
+sideBtn.addEventListener('click',()=>{
+  sideBody.hidden=!sideBody.hidden;sideBtn.setAttribute('aria-expanded',String(!sideBody.hidden));
+  sideBtn.textContent=sideBody.hidden?'Stats':'Close';statsRender();
+});
 /* ---------- cards ---------- */
 const SU=['♠','♥','♦','♣'],RK=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 function newDeck(){
@@ -493,14 +530,14 @@ function bjEnd(kind){
   else if(kind==='push'){back=B.bet;t='Push. Bet returned.'}
   else if(kind==='bust'){t='Bust. -'+fmt(B.bet);cls='loss'}
   else{t='Dealer wins. -'+fmt(B.bet);cls='loss'}
-  if(back)payout(back);
+  if(back)payout(back,'bj');
   if(cls==='win')S.bj.w++;else if(cls==='loss')S.bj.l++;
   touch();bjMsg(t,cls);renderBj();
 }
 function bjDraw(h){h.push(B.deck.pop())}
 function bjDeal(){
   if(B.live)return;const bet=getBet('bjBet');if(!bet)return;
-  spend(bet);B.bet=bet;B.deck=newDeck();B.p=[];B.d=[];
+  spend(bet,'bj');B.bet=bet;B.deck=newDeck();B.p=[];B.d=[];
   bjDraw(B.p);bjDraw(B.d);bjDraw(B.p);bjDraw(B.d);B.live=true;bjMsg('');
   const pb=bjVal(B.p)===21,db=bjVal(B.d)===21;
   if(pb||db){renderBj();bjEnd(pb&&db?'push':pb?'bj':'lose');return}
@@ -521,7 +558,7 @@ function bjHit(){
 }
 function bjDouble(){
   if(!(B.live&&B.p.length===2&&Math.floor(S.chips)>=B.bet))return;
-  spend(B.bet);B.bet*=2;bjDraw(B.p);
+  spend(B.bet,'bj');B.bet*=2;bjDraw(B.p);
   if(bjVal(B.p)>21){B.live=false;renderBj();bjEnd('bust')}else bjStand();
 }
 $('#bjDeal').onclick=bjDeal;$('#bjHit').onclick=bjHit;$('#bjStand').onclick=bjStand;$('#bjDbl').onclick=bjDouble;
@@ -564,12 +601,12 @@ function vpMsg(t,cls){const m=$('#vpMsg');m.textContent=t;m.className='msg '+(cl
 function vpGo(){
   if(V.phase===0){
     const bet=getBet('vpBet');if(!bet)return;
-    spend(bet);V.bet=bet;V.deck=newDeck();V.hand=V.deck.splice(0,5);V.held=[false,false,false,false,false];V.phase=1;V.hit=-1;
+    spend(bet,'vp');V.bet=bet;V.deck=newDeck();V.hand=V.deck.splice(0,5);V.held=[false,false,false,false,false];V.phase=1;V.hit=-1;
     vpMsg('Tap the cards you want to keep, then draw.');
   }else{
     for(let i=0;i<5;i++)if(!V.held[i])V.hand[i]=V.deck.pop();
     V.phase=0;V.hit=vpEval(V.hand);
-    if(V.hit>=0){const w=V.bet*VP[V.hit][1];payout(w);vpMsg(VP[V.hit][0]+'! '+(w>V.bet?'+'+fmt(w-V.bet):'Bet returned'),'win')}
+    if(V.hit>=0){const w=V.bet*VP[V.hit][1];payout(w,'vp');vpMsg(VP[V.hit][0]+'! '+(w>V.bet?'+'+fmt(w-V.bet):'Bet returned'),'win')}
     else vpMsg('No winning hand. -'+fmt(V.bet),'loss');
     V.held=[false,false,false,false,false];
   }
@@ -707,7 +744,7 @@ function tdEnd(win){
   const td=S.td,r=td.round;
   R.paused=false;R.phase='idle';R.q=[];R.en=[];R.pr=[];R.wave=0;R.lives=TDLIVES;R.autoT=0;R.sel=null;R.place=null;
   if(win){
-    const prize=200+120*r,back=td.spent||0;td.live=false;td.round=r+1;td.wins=(td.wins||0)+1;td.spent=0;td.towers.forEach(t=>{t.sp=0});payout(prize+back);
+    const prize=200+120*r,back=td.spent||0;td.live=false;td.round=r+1;td.wins=(td.wins||0)+1;td.spent=0;td.towers.forEach(t=>{t.sp=0});payout(prize+back,'td');
     R.msg='Round '+r+' won! Prize '+fmt(prize)+' + '+fmt(back)+' refunded for everything you bought = +'+fmt(prize+back)+' chips. Your towers and leftover ammo carry on to round '+td.round+'.';
     toast('Round won: +'+fmt(prize+back)+' chips');
   }else{
@@ -791,7 +828,7 @@ tdCv.addEventListener('click',e=>{
     const K=TDK[R.place];
     if(!tdCanPlace(p.x,p.y)){toast('Not here: keep towers off the path and apart');return}
     if(Math.floor(S.chips)<K.c){toast('Not enough chips: '+K.n+' costs '+K.c);return}
-    spend(K.c);S.td.spent=(S.td.spent||0)+K.c;const t={id:R.nid++,k:R.place,x:p.x,y:p.y,lv:1,tg:'first',sp:K.c,cd:0,a:0};
+    spend(K.c,'td');S.td.spent=(S.td.spent||0)+K.c;const t={id:R.nid++,k:R.place,x:p.x,y:p.y,lv:1,tg:'first',sp:K.c,cd:0,a:0};
     S.td.towers.push(t);R.sel=t.id;
     if(S.chips<K.c)R.place=null;
     touch();tdRender();return;
@@ -815,11 +852,11 @@ $('#p-td').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
   const d=b.dataset;
   if(d.tdShop){R.place=R.place===d.tdShop?null:d.tdShop;R.sel=null;tdRender()}
-  else if(d.tdAmmo){const o=TDAMMO[+d.tdAmmo];if(Math.floor(S.chips)<o[1]){toast('Not enough chips');return}spend(o[1]);S.td.spent=(S.td.spent||0)+o[1];S.td.ammo+=o[0];touch();R.dry=false;tdRender()}
-  else if(d.tdUp){const t=S.td.towers.find(z=>z.id===R.sel);if(!t)return;const c=tdUpCost(t);if(!c)return;if(Math.floor(S.chips)<c){toast('Not enough chips');return}spend(c);S.td.spent=(S.td.spent||0)+c;t.lv++;t.sp+=c;touch();tdRender()}
+  else if(d.tdAmmo){const o=TDAMMO[+d.tdAmmo];if(Math.floor(S.chips)<o[1]){toast('Not enough chips');return}spend(o[1],'td');S.td.spent=(S.td.spent||0)+o[1];S.td.ammo+=o[0];touch();R.dry=false;tdRender()}
+  else if(d.tdUp){const t=S.td.towers.find(z=>z.id===R.sel);if(!t)return;const c=tdUpCost(t);if(!c)return;if(Math.floor(S.chips)<c){toast('Not enough chips');return}spend(c,'td');S.td.spent=(S.td.spent||0)+c;t.lv++;t.sp+=c;touch();tdRender()}
   else if(d.tdSell){
     const t=S.td.towers.find(z=>z.id===R.sel);if(!t||S.td.live)return;
-    const v=Math.floor(t.sp*.6);S.td.spent=Math.max(0,(S.td.spent||0)-t.sp);S.td.towers=S.td.towers.filter(z=>z!==t);R.sel=null;payout(v);touch();tdRender();toast('Sold for '+fmt(v))
+    const v=Math.floor(t.sp*.6);S.td.spent=Math.max(0,(S.td.spent||0)-t.sp);S.td.towers=S.td.towers.filter(z=>z!==t);R.sel=null;payout(v,'td');touch();tdRender();toast('Sold for '+fmt(v))
   }
   else if(d.tdTg){const t=S.td.towers.find(z=>z.id===R.sel);if(!t)return;t.tg=t.tg==='first'?'strong':t.tg==='strong'?'last':'first';touch();tdRender()}
   else if(d.tdGo)tdStart();
@@ -1024,8 +1061,8 @@ function chRender(){
 }
 function chFinish(res){
   const ch=S.chess;ch.live=false;chSel=-1;
-  if(res==='win'){const pz=chPrize();ch.wins=(ch.wins||0)+1;payout(pz);ch.msg='Checkmate, you win! +'+fmt(pz)+' chips.'}
-  else if(res==='draw'){const back=Math.floor(ch.paid/2);if(back)payout(back);ch.msg='Draw. Half of everything you paid comes back: +'+fmt(back)+' chips.'}
+  if(res==='win'){const pz=chPrize();ch.wins=(ch.wins||0)+1;payout(pz,'ch');ch.msg='Checkmate, you win! +'+fmt(pz)+' chips.'}
+  else if(res==='draw'){const back=Math.floor(ch.paid/2);if(back)payout(back,'ch');ch.msg='Draw. Half of everything you paid comes back: +'+fmt(back)+' chips.'}
   else if(res==='resign')ch.msg='You resigned. The buy-in and move fees ('+fmt(ch.paid)+' chips) are gone.';
   else ch.msg='Checkmate, the house wins. The buy-in and move fees ('+fmt(ch.paid)+' chips) are gone.';
   touch();chRender();
@@ -1056,7 +1093,7 @@ $('#chBoard').addEventListener('click',e=>{
     if(m){
       const fee=chFee();
       if(Math.floor(S.chips)<fee){toast('Not enough chips: each move costs '+fee);return}
-      spend(fee);ch.paid+=fee;ch.fees=(ch.fees||0)+fee;ch.g=chApply(g,m);chSel=-1;touch();
+      spend(fee,'ch');ch.paid+=fee;ch.fees=(ch.fees||0)+fee;ch.g=chApply(g,m);chSel=-1;touch();
       if(!chAfter())chHouse();
       return;
     }
@@ -1068,7 +1105,7 @@ $('#chNew').addEventListener('click',()=>{
   if(ch.live&&!ch._conf){ch._conf=1;$('#chNew').textContent='Tap again to forfeit and restart';setTimeout(()=>{ch._conf=0;chRender()},3000);return}
   ch._conf=0;const nl=+$('#chLv').value,L=CHLV[nl];
   if(Math.floor(S.chips)<L.buy+L.fee){toast('You need '+(L.buy+L.fee)+' chips: '+L.buy+' buy-in plus your first move ('+L.fee+')');return}
-  spend(L.buy);ch.lv=nl;ch.g=chNew();ch.live=true;ch.paid=L.buy;ch.fees=0;ch.msg='Buy-in paid ('+L.buy+'). Your move; each move costs '+L.fee+' chips.';chSel=-1;touch();chRender();
+  spend(L.buy,'ch');ch.lv=nl;ch.g=chNew();ch.live=true;ch.paid=L.buy;ch.fees=0;ch.msg='Buy-in paid ('+L.buy+'). Your move; each move costs '+L.fee+' chips.';chSel=-1;touch();chRender();
 });
 $('#chRes').addEventListener('click',()=>{if(!chBusy&&S.chess.live)chFinish('resign')});
 $('#chLv').addEventListener('change',()=>{if(!S.chess.live){S.chess.lv=+$('#chLv').value;touch();chRender()}});
@@ -1516,7 +1553,7 @@ const posCost=p=>p.cost!=null?p.cost:p.n*p.px;
 function refundOld(m){
   const mine=S.pos.filter(p=>p.mid===m.id);if(!mine.length)return;
   let back=0;mine.forEach(p=>{back+=posCost(p)});
-  S.pos=S.pos.filter(p=>p.mid!==m.id);payout(back);touch();renderPos();
+  S.pos=S.pos.filter(p=>p.mid!==m.id);payout(back,'mk');touch();renderPos();
   toast('A market was replaced. Your bet was refunded: '+fmt(back));
 }
 /* decide the round: event markets draw from the final price and the chart jumps to 100 or 0 */
@@ -1533,7 +1570,7 @@ function settleMk(m,out){
   let tot=0,cost=0;
   mine.forEach(p=>{cost+=posCost(p);if((p.side==='Y')===out)tot+=p.n*100});
   S.pos=S.pos.filter(p=>p.mid!==m.id);
-  if(tot)payout(tot);
+  if(tot)payout(tot,'mk');
   touch();renderPos();
   const net=tot-cost;
   toast(detail+'Settled '+(out?'YES':'NO')+': '+(net>=0?'+':'-')+fmt(Math.abs(net))+' chips');
@@ -1687,14 +1724,14 @@ $('#p-mk').addEventListener('click',e=>{
     if(m.end-Date.now()<5000){toast('Trading is closed for this round');return}
     const ask=side==='Y'?askY(m):askN(m),fee=feeC(qty,ask),total=qty*ask+fee;
     if(total>Math.floor(S.chips)){toast('Not enough chips: that costs '+fmt(total));return}
-    spend(total);S.pos.push({id:rid(),mid:m.id,q:m.kind==='e'?m.q+' ('+m.rd+')':m.q,side,n:qty,px:ask,fee,cost:total});
+    spend(total,'mk');S.pos.push({id:rid(),mid:m.id,q:m.kind==='e'?m.q+' ('+m.rd+')':m.q,side,n:qty,px:ask,fee,cost:total});
     touch();renderPos();
     toast('Bought '+qty+' '+(side==='Y'?'YES':'NO')+' at '+ask+'¢ for '+fmt(total)+' (fee '+fee+'). Right: +'+fmt(qty*100-total)+', wrong: -'+fmt(total));
   }else if(sb){
     const p=S.pos.find(z=>z.id===sb.dataset.sell),m=p&&S.mk.find(z=>z&&z.id===p.mid);
     if(!p||!m)return;
     const bid=p.side==='Y'?bidY(m):bidN(m),v=Math.max(0,p.n*bid-feeC(p.n,bid));
-    S.pos=S.pos.filter(z=>z!==p);payout(v);touch();renderPos();toast('Sold for '+fmt(v)+' (paid '+fmt(posCost(p))+')');
+    S.pos=S.pos.filter(z=>z!==p);payout(v,'mk');touch();renderPos();toast('Sold for '+fmt(v)+' (paid '+fmt(posCost(p))+')');
   }
 });
 
