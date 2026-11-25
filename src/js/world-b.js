@@ -4,7 +4,7 @@ const coins=[];
 for(let i=0;i<40;i++){const c=new T.Mesh(coinG,coinM);c.visible=false;c.userData={life:0,spin:0,v:new T.Vector3()};scene.add(c);coins.push(c)}
 function spawn(up){
   const c=coins.find(k=>!k.visible);if(!c)return;
-  c.visible=true;c.position.set((Math.random()-.5)*.6,4.6,-.2);c.scale.setScalar(1);
+  c.visible=true;c.position.set((Math.random()-.5)*.6,3.6,-.2);c.scale.setScalar(1);
   c.userData.life=1.7;c.userData.spin=Math.random()*6;
   c.userData.v.set((Math.random()-.5)*2.6,up+Math.random()*1.6,(Math.random()-.5)*2.6);
 }
@@ -18,7 +18,7 @@ host.addEventListener('pointermove',e=>{if(!dragging)return;targetYaw-=(e.client
 function resize(){
   const w=host.clientWidth||600,h=host.clientHeight||320;
   renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();
-  dist=15*Math.pow(Math.max(1,1.55/cam.aspect),.85);
+  dist=17*Math.pow(Math.max(1,1.55/cam.aspect),.85);
 }
 if(window.ResizeObserver)new ResizeObserver(resize).observe(host);
 resize();
@@ -32,16 +32,25 @@ function frame(){
   const dt=Math.min(clk.getDelta(),.05);t+=dt;
   if(!dragging&&!calm)targetYaw+=dt*(running?.18:.07);
   yaw+=(targetYaw-yaw)*Math.min(1,dt*6);
-  cam.position.set(Math.sin(yaw)*dist,dist*.52,Math.cos(yaw)*dist);cam.lookAt(0,.2,0);
+  cam.position.set(Math.sin(yaw)*dist,dist*.52,Math.cos(yaw)*dist);cam.lookAt(0,1.5,0);
   isl.position.y=Math.sin(t*.9)*.16;isl.rotation.z=Math.sin(t*.6)*.012;isl.rotation.x=Math.cos(t*.5)*.01;
-  mp.rotation.z-=dt*(running?1.6:.15);hp.rotation.z+=dt*(running?.6:.05);
+  spin.forEach(a=>{if(a.length===3)a[0].rotation.z+=dt*(running?a[1]:a[2]);else a[0].rotation.y+=dt*(running?a[4]:a[5])});
+  center.stages=center.stages||stages;
+  stages.forEach((g,i)=>{
+    const on=i===center.stage;
+    const bounce=on&&center.pop>0?1+Math.sin((1-center.pop)*Math.PI)*.3:1;
+    center.sc[i]+=((on?(i>=4?.8:1):.001)-center.sc[i])*Math.min(1,dt*7);
+    g.scale.setScalar(Math.max(.001,center.sc[i]*bounce));g.visible=center.sc[i]>.02;
+  });
+  if(center.pop>0)center.pop=Math.max(0,center.pop-dt*1.5);
   rotors.forEach((r,i)=>{r.rotation.z-=dt*(running?2.6:.7)*(i%2?.85:1)});
   airships.forEach(a=>{a.orb.rotation.y+=dt*(running?.35:.15);a.ship.position.y=Math.sin(t*1.2)*.1});
   for(const k in blds){
     const b=blds[k];
     if(b.pop>0)b.pop=Math.max(0,b.pop-dt*1.8);
     const bounce=b.pop>0?1+Math.sin((1-b.pop)*Math.PI)*.35:1;
-    const target=b.own>0?.85+Math.min(b.own,12)*.045:.001;
+    const target=b.own>0?.62+Math.min(b.own,12)*.04:.001;
+    [1,3,6].forEach((n,i)=>{const th=[3,6,10][i];b.ts[i]+=((b.own>=th?1:.001)-b.ts[i])*Math.min(1,dt*6);b.tiers[i].scale.setScalar(Math.max(.001,b.ts[i]));b.tiers[i].visible=b.ts[i]>.02});
     b.sc+=(target-b.sc)*Math.min(1,dt*8);
     b.g.scale.setScalar(Math.max(.001,b.sc*bounce));b.g.visible=b.sc>.02;
     b.mk.visible=b.own===0;
@@ -66,8 +75,11 @@ function sync(){
     if(started&&n>b.own){b.pop=1;burst(12)}
     b.own=n;
   });
+  const tot=BIZ.reduce((a,x)=>a+(S.own[x.id]||0),0);let st=0;center.th.forEach((n,i)=>{if(tot>=n)st=i});
+  if(st!==center.stage){if(started&&center.stage>=0){center.pop=1;burst(18)}center.stage=st}
+  const NM=['Sapling','Cabin','Workshop','Terrace tower','Sun tower','Sun spire'];
   const h=document.getElementById('heroTag'),r=tyRate();
-  if(h)h.textContent=(r>0?'Empire +'+fmt(r)+'/min · ':'')+'drag to look around';
+  if(h)h.textContent=NM[st]+(st<5?' ('+(center.th[st+1]-tot)+' more buys to grow)':' (max)')+(r>0?' · +'+fmt(r)+'/min':'')+' · drag to look';
   started=true;
 }
 return{sync,burst,setRun(r){running=!!r}};

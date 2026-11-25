@@ -241,7 +241,7 @@ button.pc:hover:not(:disabled){transform:translateY(-4px) rotateX(4deg)}
       <p style="margin:8px 0">Each market asks a yes/no question. The price in cents is the crowd's chance that the answer is YES. A YES contract at 41&cent; costs 41 chips. If the market settles YES, every YES contract pays <b>100 chips back</b>, so your profit is 59. If it settles NO, it pays nothing and you lose the 41. NO contracts work the other way around and cost 100 minus the YES price.</p>
       <p style="margin:8px 0">Cheap contracts pay more when they hit but hit less often. A 1&cent; contract returns 100 if right (99 profit). A 91&cent; contract returns the same 100 but only 9 profit.</p>
       <p style="margin:8px 0">Each buy and each early sell pays a small fee, using the same taker formula Kalshi publishes: 7% &times; contracts &times; price &times; (1 &minus; price), rounded up to the next whole chip. It is biggest near 50&cent;. You can sell any time before settlement at the current bid. Charts show the last 2, 5 or 10 minutes.</p>
-      <p style="margin:8px 0">Every round lasts 5 minutes, then settles and a new round opens. The BTC and Gold markets follow a simulated price that moves like the real thing (this is not live data). Each round asks whether the price will finish <b>above the strike</b>, and the dashed gold line on the chart is that strike. The YES price rises when the live price is above the strike and falls when it is below, and it snaps toward 99 or 1 as time runs out. When the round ends it settles against the final price, and the next round sets a fresh strike near the current price.</p>
+      <p style="margin:8px 0">Every round lasts 5 minutes, then settles and a new round opens. The four event markets ask the same question every round, so each has one continuous chart: it jumps to 100 (YES) or 0 (NO) when a round settles, and the next round reopens at a fresh price. Gold vertical lines mark where each round starts. The BTC and Gold markets follow a simulated price that moves like the real thing (this is not live data). Each round asks whether the price will finish <b>above the strike</b>, and the dashed gold line on the chart is that strike. The YES price rises when the live price is above the strike and falls when it is below, and it snaps toward 99 or 1 as time runs out. When the round ends it settles against the final price, and the next round sets a fresh strike near the current price.</p>
     </details>
     <div class="mk-grid" id="mkGrid"></div>
     <h2 style="margin-top:22px">Your positions</h2>
@@ -605,22 +605,84 @@ function makeTurbine(parent,x,y,z,s){
 }
 makeTurbine(isl,-3.8,.4,-1.4,1);makeTurbine(isl,3.5,.4,-3.2,.9);
 
-/* sun tower: the desk. A solar flower on a terraced spire. */
-const tw=new T.Group();tw.position.set(0,.4,-.2);isl.add(tw);
-mesh(tw,CylG(1.2,1.4,.5,10),M(0xc4481f,{flatShading:true}),0,.25,0);
-mesh(tw,CylG(.55,.95,3.2,10),M(0xff9a3d,{flatShading:true}),0,2.1,0);
-function ring(y,r,n){
-  mesh(tw,TorG(r,.12),M(0x22d46a),0,y,0,Math.PI/2,0,0);
-  for(let i=0;i<n;i++){const a=i/n*6.283;mesh(tw,IcoG(.14),M(i%2?0x1fae5a:0xff3d6e,{flatShading:true}),Math.cos(a)*r,y+.1,Math.sin(a)*r)}
+/* centerpiece: grows with total businesses bought (no fixed tower). Six stages, from a sapling to a floating sun-spire. */
+const spin=[];
+const cg=new T.Group();cg.position.set(0,.4,-.2);isl.add(cg);
+const stages=[0,1,2,3,4,5].map(()=>{const g=new T.Group();g.scale.setScalar(.001);g.visible=false;cg.add(g);return g});
+mesh(cg,CylG(1.5,1.65,.3,16),M(0xc4481f,{flatShading:true}),0,.1,0);
+mesh(cg,TorG(1.5,.06,28),GOLD(),0,.27,0,Math.PI/2,0,0);
+function ringDeco(g,y,r,n){
+  mesh(g,TorG(r,.12),M(0x22d46a),0,y,0,Math.PI/2,0,0);
+  for(let i=0;i<n;i++){const a=i/n*6.283;mesh(g,IcoG(.14),M(i%2?0x1fae5a:0xff3d6e,{flatShading:true}),Math.cos(a)*r,y+.1,Math.sin(a)*r)}
 }
-ring(1.0,.95,9);ring(1.9,.8,8);ring(2.8,.66,7);
-mesh(tw,CylG(.18,.3,.6,8),BRASS(),0,3.95,0);
-[-1,1].forEach(s=>{mesh(tw,SphG(.55,14),GLASS(),s*1.6,.75,.2).castShadow=false;mesh(tw,IcoG(.28),M(0x22d46a,{flatShading:true}),s*1.6,.55,.2)});
-const flower=new T.Group();flower.position.set(0,4.45,0);flower.rotation.x=-.3;tw.add(flower);
-const mp=new T.Group(),hp=new T.Group();flower.add(mp,hp);
-for(let i=0;i<12;i++){const a=i/12*6.283;mesh(mp,BoxG(.16,.52,.05),M(i%2?0xffd23f:0xff8a1f),Math.sin(a)*.88,Math.cos(a)*.88,0,0,0,-a)}
-mesh(hp,CylG(.5,.5,.12,12),PANEL(),0,0,0,Math.PI/2,0,0);
-mesh(hp,TorG(.52,.05),GOLD(),0,0,0);
+function sunFlower(g,y,s,fast){
+  const f=new T.Group();f.position.set(0,y,0);f.rotation.x=-.3;f.scale.setScalar(s);g.add(f);
+  const a=new T.Group(),b=new T.Group();f.add(a,b);
+  for(let i=0;i<12;i++){const t=i/12*6.283;mesh(a,BoxG(.16,.52,.05),M(i%2?0xffd23f:0xff8a1f),Math.sin(t)*.88,Math.cos(t)*.88,0,0,0,-t)}
+  mesh(b,CylG(.5,.5,.12,12),PANEL(),0,0,0,Math.PI/2,0,0);
+  mesh(b,TorG(.52,.05),GOLD(),0,0,0);
+  spin.push([a,-1.6,-.15],[b,.6,.05]);
+}
+/* 0: a sapling and a glowing seed */
+(()=>{const g=stages[0];
+  mesh(g,CylG(.07,.12,.9,7),M(0xb5651d),0,.55,0);
+  [[0,1.15,0,.38],[.28,.95,.1,.26],[-.26,.9,-.1,.24]].forEach(p=>mesh(g,IcoG(p[3]),M(0x22d46a,{flatShading:true}),p[0],p[1],p[2]));
+  mesh(g,SphG(.09,8),M(0xff3d6e),.12,1.3,.1);
+})();
+/* 1: a little cabin with a green roof */
+(()=>{const g=stages[1];
+  mesh(g,BoxG(1.3,.8,1),M(0xffa63d),0,.7,0);
+  mesh(g,BoxG(1.5,.14,1.2),M(0x13a55a),0,1.18,0);
+  for(let i=0;i<5;i++)mesh(g,ConeG(.07,.24,5),M(0x22d46a),-.5+i*.25,1.36,(i%2?.2:-.2));
+  mesh(g,BoxG(.32,.5,.04),M(0x6a2f12),-.25,.55,.51);
+  mesh(g,BoxG(.35,.3,.04),GLOW(0xfff2a8,0xffcc33),.3,.78,.51);
+})();
+/* 2: two floors, a solar panel and a small turbine */
+(()=>{const g=stages[2];
+  mesh(g,BoxG(1.5,.9,1.15),M(0xffa63d),0,.75,0);
+  mesh(g,BoxG(1.1,.7,.9),M(0xffc65c),0,1.55,0);
+  mesh(g,BoxG(1.7,.14,1.35),M(0x13a55a),0,1.15,0);
+  mesh(g,BoxG(1.3,.14,1.1),M(0x13a55a),0,1.95,0);
+  mesh(g,BoxG(.9,.05,.6),PANEL(),0,2.06,0,-.35,0,0);
+  [-.35,.35].forEach(x=>mesh(g,BoxG(.3,.3,.04),GLOW(0x7ff7ff,0x17d6c0),x,.85,.59));
+  makeTurbine(g,.9,.25,.9,.6);
+})();
+/* 3: a terraced tower */
+(()=>{const g=stages[3];
+  [[1.7,0xff8a3d],[1.45,0xffa94d],[1.2,0xffc65c],[.95,0x2ee6c8]].forEach((t,i)=>{
+    const w=t[0],y=.7+i*.8;
+    mesh(g,BoxG(w,.75,w),M(t[1]),0,y,0);
+    mesh(g,BoxG(w*.65,.4,.03),GLOW(0x7ff7ff,0x17d6c0),0,y,w/2+.01);
+    mesh(g,BoxG(w+.25,.1,w+.25),M(0x22d46a),0,y+.42,0);
+  });
+  mesh(g,CylG(.08,.1,.8,8),BRASS(),0,4.3,0);makeTurbine(g,0,4.5,0,.5);
+})();
+/* 4: the sun tower with its solar flower */
+(()=>{const g=stages[4];
+  mesh(g,CylG(.65,1.05,3.4,10),M(0xff9a3d,{flatShading:true}),0,1.9,0);
+  ringDeco(g,.9,1.05,9);ringDeco(g,1.8,.9,8);ringDeco(g,2.7,.75,7);
+  mesh(g,CylG(.18,.3,.6,8),BRASS(),0,3.9,0);
+  sunFlower(g,4.4,1,0);
+})();
+/* 5: the advanced island core: a tall spire, a big flower, orbiting rings and a floating crystal */
+(()=>{const g=stages[5];
+  mesh(g,CylG(.55,1.1,4.2,10),M(0xff9a3d,{flatShading:true}),0,2.3,0);
+  ringDeco(g,.9,1.15,10);ringDeco(g,2,.95,9);ringDeco(g,3.1,.78,8);
+  mesh(g,CylG(.2,.34,.8,8),BRASS(),0,4.8,0);
+  sunFlower(g,5.6,1.35,0);
+  const core=new T.Group();core.position.set(0,7.3,0);g.add(core);
+  mesh(core,IcoG(.42),GLOW(0x9dffb0,0x3fe070),0,0,0);
+  const r1=new T.Group(),r2=new T.Group();core.add(r1,r2);
+  mesh(r1,TorG(.95,.05,28),GOLD(),0,0,0);mesh(r1,IcoG(.13),M(0xff3d6e,{flatShading:true}),.95,0,0);
+  mesh(r2,TorG(1.3,.04,32),BRASS(),0,0,0);mesh(r2,IcoG(.13),M(0x17d6c0,{flatShading:true}),-1.3,0,0);
+  r1.rotation.x=1.2;r2.rotation.x=.4;r2.rotation.y=.8;
+  spin.push([r1,0,0,'y',1.2,.4],[r2,0,0,'y',-.9,-.3]);
+  [[2.4,0],[-2.4,.6],[0,2.4],[0,-2.4]].forEach((p,i)=>{
+    const pn=new T.Group();pn.position.set(p[0],3.2+(i%2)*.5,p[1]);g.add(pn);
+    mesh(pn,BoxG(.9,.06,.6),PANEL(),0,0,0,-.3,i*.8,0);mesh(pn,SphG(.12,8),GOLD(),0,-.2,0);
+  });
+})();
+const center={stage:-1,pop:0,sc:[.001,.001,.001,.001,.001,.001],th:[0,2,5,9,14,22]};
 
 /* businesses */
 const BLD={
@@ -679,7 +741,14 @@ Object.keys(SLOT).forEach(k=>{
   const s=SLOT[k],g=BLD[k]();
   g.position.set(s[0],.4,s[1]);g.rotation.y=Math.atan2(s[0],s[1]);g.scale.setScalar(.001);g.visible=false;isl.add(g);
   const mk=mesh(isl,TorG(.55,.06,24),GLOW(0xffe27a,0xffc933),s[0],.46,s[1],Math.PI/2,0,0);
-  blds[k]={g,mk,own:0,pop:0,sc:.001};
+  const H={cart:1.5,copy:1.6,arcade:1.2,tutor:1.5,tower:3.7,bank:3.4}[k];
+  const t2=new T.Group(),t3=new T.Group(),t4=new T.Group();[t2,t3,t4].forEach(t=>{t.scale.setScalar(.001);t.visible=false;g.add(t)});
+  [-1,1].forEach(sx=>{mesh(t2,CylG(.04,.05,.9,6),BRASS(),sx*1.05,.45,.75);mesh(t2,SphG(.13,10),GLOW(0xfff2a8,0xffcc33),sx*1.05,.98,.75)});
+  makeTurbine(t3,-1.25,0,-.7,.42);mesh(t3,BoxG(.8,.05,.5),PANEL(),1.15,.35,-.6,-.4,0,0);
+  const halo=new T.Group();halo.position.y=H+.5;t4.add(halo);
+  mesh(halo,TorG(.8,.05,28),GOLD(),0,0,0,Math.PI/2,0,0);mesh(halo,IcoG(.15),M(0xff3d6e,{flatShading:true}),.8,0,0);mesh(halo,IcoG(.15),M(0x17d6c0,{flatShading:true}),-.8,0,0);
+  spin.push([halo,0,0,'y',1,.3]);
+  blds[k]={g,mk,own:0,pop:0,sc:.001,tiers:[t2,t3,t4],ts:[.001,.001,.001]};
 });
 
 /* sky: sunset-tinted clouds and fireflies */
@@ -702,7 +771,7 @@ const coins=[];
 for(let i=0;i<40;i++){const c=new T.Mesh(coinG,coinM);c.visible=false;c.userData={life:0,spin:0,v:new T.Vector3()};scene.add(c);coins.push(c)}
 function spawn(up){
   const c=coins.find(k=>!k.visible);if(!c)return;
-  c.visible=true;c.position.set((Math.random()-.5)*.6,4.6,-.2);c.scale.setScalar(1);
+  c.visible=true;c.position.set((Math.random()-.5)*.6,3.6,-.2);c.scale.setScalar(1);
   c.userData.life=1.7;c.userData.spin=Math.random()*6;
   c.userData.v.set((Math.random()-.5)*2.6,up+Math.random()*1.6,(Math.random()-.5)*2.6);
 }
@@ -716,7 +785,7 @@ host.addEventListener('pointermove',e=>{if(!dragging)return;targetYaw-=(e.client
 function resize(){
   const w=host.clientWidth||600,h=host.clientHeight||320;
   renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();
-  dist=15*Math.pow(Math.max(1,1.55/cam.aspect),.85);
+  dist=17*Math.pow(Math.max(1,1.55/cam.aspect),.85);
 }
 if(window.ResizeObserver)new ResizeObserver(resize).observe(host);
 resize();
@@ -730,16 +799,25 @@ function frame(){
   const dt=Math.min(clk.getDelta(),.05);t+=dt;
   if(!dragging&&!calm)targetYaw+=dt*(running?.18:.07);
   yaw+=(targetYaw-yaw)*Math.min(1,dt*6);
-  cam.position.set(Math.sin(yaw)*dist,dist*.52,Math.cos(yaw)*dist);cam.lookAt(0,.2,0);
+  cam.position.set(Math.sin(yaw)*dist,dist*.52,Math.cos(yaw)*dist);cam.lookAt(0,1.5,0);
   isl.position.y=Math.sin(t*.9)*.16;isl.rotation.z=Math.sin(t*.6)*.012;isl.rotation.x=Math.cos(t*.5)*.01;
-  mp.rotation.z-=dt*(running?1.6:.15);hp.rotation.z+=dt*(running?.6:.05);
+  spin.forEach(a=>{if(a.length===3)a[0].rotation.z+=dt*(running?a[1]:a[2]);else a[0].rotation.y+=dt*(running?a[4]:a[5])});
+  center.stages=center.stages||stages;
+  stages.forEach((g,i)=>{
+    const on=i===center.stage;
+    const bounce=on&&center.pop>0?1+Math.sin((1-center.pop)*Math.PI)*.3:1;
+    center.sc[i]+=((on?(i>=4?.8:1):.001)-center.sc[i])*Math.min(1,dt*7);
+    g.scale.setScalar(Math.max(.001,center.sc[i]*bounce));g.visible=center.sc[i]>.02;
+  });
+  if(center.pop>0)center.pop=Math.max(0,center.pop-dt*1.5);
   rotors.forEach((r,i)=>{r.rotation.z-=dt*(running?2.6:.7)*(i%2?.85:1)});
   airships.forEach(a=>{a.orb.rotation.y+=dt*(running?.35:.15);a.ship.position.y=Math.sin(t*1.2)*.1});
   for(const k in blds){
     const b=blds[k];
     if(b.pop>0)b.pop=Math.max(0,b.pop-dt*1.8);
     const bounce=b.pop>0?1+Math.sin((1-b.pop)*Math.PI)*.35:1;
-    const target=b.own>0?.85+Math.min(b.own,12)*.045:.001;
+    const target=b.own>0?.62+Math.min(b.own,12)*.04:.001;
+    [1,3,6].forEach((n,i)=>{const th=[3,6,10][i];b.ts[i]+=((b.own>=th?1:.001)-b.ts[i])*Math.min(1,dt*6);b.tiers[i].scale.setScalar(Math.max(.001,b.ts[i]));b.tiers[i].visible=b.ts[i]>.02});
     b.sc+=(target-b.sc)*Math.min(1,dt*8);
     b.g.scale.setScalar(Math.max(.001,b.sc*bounce));b.g.visible=b.sc>.02;
     b.mk.visible=b.own===0;
@@ -764,8 +842,11 @@ function sync(){
     if(started&&n>b.own){b.pop=1;burst(12)}
     b.own=n;
   });
+  const tot=BIZ.reduce((a,x)=>a+(S.own[x.id]||0),0);let st=0;center.th.forEach((n,i)=>{if(tot>=n)st=i});
+  if(st!==center.stage){if(started&&center.stage>=0){center.pop=1;burst(18)}center.stage=st}
+  const NM=['Sapling','Cabin','Workshop','Terrace tower','Sun tower','Sun spire'];
   const h=document.getElementById('heroTag'),r=tyRate();
-  if(h)h.textContent=(r>0?'Empire +'+fmt(r)+'/min · ':'')+'drag to look around';
+  if(h)h.textContent=NM[st]+(st<5?' ('+(center.th[st+1]-tot)+' more buys to grow)':' (max)')+(r>0?' · +'+fmt(r)+'/min':'')+' · drag to look';
   started=true;
 }
 return{sync,burst,setRun(r){running=!!r}};
@@ -774,21 +855,14 @@ return{sync,burst,setRun(r){running=!!r}};
   return stub;
 }
 })();
-/* ---------- markets: every round lasts 5 minutes. Four event markets, then BTC and Gold. ---------- */
+/* ---------- markets: every round lasts 5 minutes. Four repeating event markets, then BTC and Gold. ---------- */
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const QS=[
-  'Will the Canopy Co-op solar output beat the forecast?',
-  'Will rain fill the Terrace Reservoir by dusk?',
+/* each event slot asks the same question every round, so its chart is one continuous line */
+const EQ=[
+  'Will rain fill the Terrace Reservoir again?',
+  'Will the council approve the next bill?',
   'Will the Greenline tram arrive on time?',
-  'Will the Seedbank report a record harvest?',
-  'Will the Wind Choir turbines top 90% capacity?',
-  'Will the airship Dandelion dock before sunset?',
-  'Will the Lantern Market sell out of tomatoes?',
-  'Will the River Council approve the new orchard?',
-  'Will the rooftop bees make more honey than last week?',
-  'Will the Sunrise Relay finish under four hours?',
-  'Will the Moss Street garden win best in bloom?',
-  'Will the tidal battery reach full charge by midnight?'
+  'Will the Canopy Co-op solar output beat the forecast?'
 ];
 const STEP=3000,ROUND=300000,KEEP=11*60000;
 /* simulated assets: annualized vol, strike increment, decimals, starting anchor, round offset */
@@ -843,7 +917,7 @@ function ensureAssets(now){
   Object.keys(AS).forEach(sym=>{
     if(!S.as[sym]||!S.as[sym].h)S.as[sym]=assetInit(sym,now);
     let cut=now-KEEP;
-    S.mk.forEach(m=>{if(m&&m.kind==='a'&&m.sym===sym)cut=Math.min(cut,m.start-STEP*2)});
+    S.mk.forEach(m=>{if(m&&m.kind==='a'&&m.sym===sym)cut=Math.min(cut,m.start-ROUND*2-STEP*2)});
     assetAdvance(sym,now,cut);
   });
 }
@@ -859,27 +933,40 @@ function quote(m,now){
 function newAsset(sym,now){
   const a=AS[sym],end=endFor(a.off,now),start=end-ROUND;
   const K=Math.round(priceAt(sym,start)/a.inc)*a.inc;
-  const m={id:rid(),kind:'a',sym,K,start,end,price:50,p:.5};
+  const m={id:rid(),kind:'a',sym,K,start,end,price:50,p:.5,rd:clock(start)+'–'+clock(end)};
   m.q='Will '+a.n+' be above '+fmtP(sym,K)+' at '+clock(end)+'?';
   quote(m,now);return m;
 }
 
-/* --- event markets: martingale price path, outcome drawn from the final price --- */
+/* --- event markets: martingale price path, outcome drawn from the final price. One continuous series per slot. --- */
+const evNext=(p,f)=>Math.max(.03,Math.min(.97,p+.05*(1+2*f)*Math.sqrt(p*(1-p))*(Math.random()*2-1)*1.732));
+/* fill the two rounds before the current one so the chart is never blank; each ends at 100 or 0 */
+function ghost(slot,curStart){
+  const h=S.hist[slot]=[];
+  for(let r=2;r>=1;r--){
+    const st=curStart-r*ROUND;let p=.2+Math.random()*.6;
+    h.push([st,Math.round(p*100)]);
+    for(let t=st+STEP;t<=st+ROUND;t+=STEP){p=evNext(p,(t-st)/ROUND);h.push([t,Math.round(p*100)])}
+    h.push([st+ROUND,Math.random()<p?100:0]);
+  }
+}
 function evAdvance(m,upTo){
-  const lim=Math.min(upTo,m.end);
+  const lim=Math.min(upTo,m.end),h=S.hist[m.slot];
   while(m.lt+STEP<=lim){
     m.lt+=STEP;
-    const f=(m.lt-m.start)/ROUND;
-    m.p=Math.max(.03,Math.min(.97,m.p+.05*(1+2*f)*Math.sqrt(m.p*(1-m.p))*(Math.random()*2-1)*1.732));
-    m.h.push([m.lt,Math.round(m.p*100)]);
+    m.p=evNext(m.p,(m.lt-m.start)/ROUND);
+    h.push([m.lt,Math.round(m.p*100)]);
   }
   m.price=Math.max(1,Math.min(99,Math.round(m.p*100)));
+  while(h.length>2&&h[1][0]<upTo-KEEP)h.shift();
 }
-function newEvent(slot,now,taken){
+function newEvent(slot,now){
+  if(!S.hist)S.hist=[[],[],[],[]];
   const end=endFor(EOFF[slot],now),start=end-ROUND,p0=.2+Math.random()*.6;
-  const used=new Set(taken.filter(Boolean).map(m=>m.q)),pool=QS.filter(q=>!used.has(q));
-  const q=pool.length?pool[Math.floor(Math.random()*pool.length)]:QS[0];
-  const m={id:rid(),kind:'e',q,p:p0,price:Math.round(p0*100),start,end,lt:start,h:[[start,Math.round(p0*100)]]};
+  const h=S.hist[slot]||(S.hist[slot]=[]);
+  if(!h.length||h[h.length-1][0]<start-STEP*3)ghost(slot,start);
+  S.hist[slot].push([start,Math.round(p0*100)]);
+  const m={id:rid(),kind:'e',slot,q:EQ[slot],rd:clock(start)+'–'+clock(end),p:p0,price:Math.round(p0*100),start,end,lt:start};
   evAdvance(m,now);return m;
 }
 
@@ -891,11 +978,17 @@ function refundOld(m){
   S.pos=S.pos.filter(p=>p.mid!==m.id);payout(back);touch();renderPos();
   toast('A market was replaced. Your bet was refunded: '+fmt(back));
 }
-function settleMk(m){
+/* decide the round: event markets draw from the final price and the chart jumps to 100 or 0 */
+function resolve(m){
+  if(m.kind==='a')return priceAt(m.sym,m.end)>m.K;
+  const out=Math.random()<m.p;
+  S.hist[m.slot].push([m.end,out?100:0]);
+  return out;
+}
+function settleMk(m,out){
   const mine=S.pos.filter(p=>p.mid===m.id);if(!mine.length)return;
-  let out,detail='';
-  if(m.kind==='a'){const fin=priceAt(m.sym,m.end);out=fin>m.K;detail=AS[m.sym].n+' closed '+fmtP(m.sym,fin)+' vs strike '+fmtP(m.sym,m.K)+'. '}
-  else out=Math.random()<m.p;
+  let detail='';
+  if(m.kind==='a'){const fin=priceAt(m.sym,m.end);detail=AS[m.sym].n+' closed '+fmtP(m.sym,fin)+' vs strike '+fmtP(m.sym,m.K)+'. '}
   let tot=0,cost=0;
   mine.forEach(p=>{cost+=posCost(p);if((p.side==='Y')===out)tot+=p.n*100});
   S.pos=S.pos.filter(p=>p.mid!==m.id);
@@ -904,33 +997,48 @@ function settleMk(m){
   const net=tot-cost;
   toast(detail+'Settled '+(out?'YES':'NO')+': '+(net>=0?'+':'-')+fmt(Math.abs(net))+' chips');
 }
-function newSlot(i,now,taken){return i<4?newEvent(i,now,taken):newAsset(i===4?'btc':'gold',now)}
-function slotOk(m,i){return !!m&&(i<4?m.kind==='e':(m.kind==='a'&&m.sym===(i===4?'btc':'gold')))}
+function newSlot(i,now){return i<4?newEvent(i,now):newAsset(i===4?'btc':'gold',now)}
+function slotOk(m,i){
+  if(!m)return false;
+  if(i<4)return m.kind==='e'&&m.slot===i&&m.q===EQ[i]&&!m.h;
+  return m.kind==='a'&&m.sym===(i===4?'btc':'gold');
+}
 function mkTick(){
   const now=Date.now();
+  if(!S.hist)S.hist=[[],[],[],[]];
   while(S.mk.length<6)S.mk.push(null);
   S.mk=S.mk.slice(0,6);
   S.mk.forEach((m,i)=>{if(m&&!slotOk(m,i)){refundOld(m);S.mk[i]=null}});
   ensureAssets(now);
   S.mk=S.mk.map((m,i)=>{
-    if(!m)return newSlot(i,now,S.mk);
+    if(!m)return newSlot(i,now);
     if(m.kind==='e')evAdvance(m,now);else quote(m,now);
-    if(now>=m.end){settleMk(m);return newSlot(i,now,S.mk)}
+    if(now>=m.end){settleMk(m,resolve(m));return newSlot(i,now)}
     return m;
   });
   renderMk();
 }
 
-/* --- chart: YES price for event markets, the asset price (with strike line) for BTC and Gold --- */
+/* --- chart: YES price for event markets, the asset price with per-round strike lines for BTC and Gold --- */
 function chart(m,now){
   const W=300,H=96,range=mkRange*60000,t0=now-range,asset=m.kind==='a';
-  const src=asset?S.as[m.sym].h:m.h,cur=asset?S.as[m.sym].price:m.price;
+  const src=asset?S.as[m.sym].h:(S.hist[m.slot]||[]),cur=asset?S.as[m.sym].price:m.price;
   const pts=src.filter(p=>p[0]>=t0-STEP*2);
   if(pts.length<2)return null;
   let lo=Infinity,hi=-Infinity;
   pts.forEach(p=>{lo=Math.min(lo,p[1]);hi=Math.max(hi,p[1])});
   lo=Math.min(lo,cur);hi=Math.max(hi,cur);
-  if(asset){lo=Math.min(lo,m.K);hi=Math.max(hi,m.K)}
+  const segs=[];
+  if(asset){
+    const inc=AS[m.sym].inc;
+    for(let k=0;k<3;k++){
+      const st=m.start-k*ROUND,en=Math.min(st+ROUND,now);
+      if(en<=t0)continue;
+      const Kk=k===0?m.K:Math.round(priceAt(m.sym,st)/inc)*inc;
+      segs.push({x1:Math.max(st,t0),x2:en,K:Kk,now:k===0});
+      lo=Math.min(lo,Kk);hi=Math.max(hi,Kk);
+    }
+  }
   let a,b;
   if(asset){const pad=Math.max((hi-lo)*.15,cur*.0002);a=lo-pad;b=hi+pad}
   else{const pad=Math.max(3,(hi-lo)*.15);a=Math.max(0,lo-pad);b=Math.min(100,hi+pad);if(b-a<12){a=Math.max(0,Math.min(a,88));b=a+12}}
@@ -940,12 +1048,16 @@ function chart(m,now){
   const col=cur>=pts[0][1]?'#3fe6d2':'#ff7a66',gid='g'+esc(m.id);
   const area='M'+pl[0]+' L'+pl.slice(1).join(' L')+' L'+W+','+H+' L'+pl[0].split(',')[0]+','+H+' Z';
   let grid=[.25,.5,.75].map(f=>'<line x1="0" x2="'+W+'" y1="'+(H*f)+'" y2="'+(H*f)+'" stroke="rgba(255,255,255,.14)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>').join('');
-  let ky=null;
-  if(asset){
-    ky=Y(m.K);
-    grid+='<line x1="0" x2="'+W+'" y1="'+ky.toFixed(1)+'" y2="'+ky.toFixed(1)+'" stroke="#ffd34d" stroke-width="1.5" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"/>';
-    const xs=X(m.start);if(xs>0&&xs<W)grid+='<line x1="'+xs.toFixed(1)+'" x2="'+xs.toFixed(1)+'" y1="0" y2="'+H+'" stroke="rgba(255,211,77,.4)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>';
+  for(let k=0;k<3;k++){
+    const xs=X(m.start-k*ROUND);
+    if(xs>1&&xs<W-1)grid+='<line x1="'+xs.toFixed(1)+'" x2="'+xs.toFixed(1)+'" y1="0" y2="'+H+'" stroke="rgba(255,211,77,.45)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>';
   }
+  let ky=null;
+  segs.forEach(s=>{
+    const y=Y(s.K).toFixed(1);
+    if(s.now)ky=Y(s.K);
+    grid+='<line x1="'+X(s.x1).toFixed(1)+'" x2="'+X(s.x2).toFixed(1)+'" y1="'+y+'" y2="'+y+'" stroke="#ffd34d" stroke-opacity="'+(s.now?1:.5)+'" stroke-width="'+(s.now?1.8:1.3)+'"'+(s.now?' stroke-dasharray="6 4"':'')+' vector-effect="non-scaling-stroke"/>';
+  });
   const svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+col+'" stop-opacity=".4"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>'+grid+'<path d="'+area+'" fill="url(#'+gid+')"/><polyline points="'+pl.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
   return{svg,a,b,ky};
 }
@@ -958,8 +1070,10 @@ function renderMk(){
     let c=g.querySelector('[data-id="'+m.id+'"]');
     if(!c){
       c=document.createElement('div');c.className='mk';c.dataset.id=m.id;c.style.order=i;
-      c.innerHTML='<h3></h3><div class="row sp live"><span class="lp mono"></span><span class="ld mono"></span></div><div class="row sp" style="font-size:12px"><span class="mute">Round ends in</span><span class="cd mono"></span></div><div class="px"><div class="y"></div><div class="n"></div></div><div class="chart"><div class="cv"></div><span class="yh"></span><span class="yl"></span><span class="ys"></span></div><div class="cx"><span class="c1"></span><span>now</span></div><div class="row" style="flex-wrap:nowrap"><button class="btn buy" data-buy-mk="'+esc(m.id)+'" data-side="Y"><span class="t"></span><small class="s"></small></button><button class="btn buy no" data-buy-mk="'+esc(m.id)+'" data-side="N"><span class="t"></span><small class="s"></small></button></div>';
-      c.querySelector('h3').textContent=m.q;g.append(c);
+      c.innerHTML='<h3></h3><div class="row sp live"><span class="lp mono"></span><span class="ld mono"></span></div><div class="row sp" style="font-size:12px"><span class="mute rl"></span><span class="cd mono"></span></div><div class="px"><div class="y"></div><div class="n"></div></div><div class="chart"><div class="cv"></div><span class="yh"></span><span class="yl"></span><span class="ys"></span></div><div class="cx"><span class="c1"></span><span>now</span></div><div class="row" style="flex-wrap:nowrap"><button class="btn buy" data-buy-mk="'+esc(m.id)+'" data-side="Y"><span class="t"></span><small class="s"></small></button><button class="btn buy no" data-buy-mk="'+esc(m.id)+'" data-side="N"><span class="t"></span><small class="s"></small></button></div>';
+      c.querySelector('h3').textContent=m.q;
+      c.querySelector('.rl').textContent='5-min round '+(m.rd||'')+' · ends in';
+      g.append(c);
     }
     const asset=m.kind==='a';
     c.querySelector('.cd').textContent=fmtMs(m.end-now);
@@ -1012,7 +1126,7 @@ $('#p-mk').addEventListener('click',e=>{
     if(m.end-Date.now()<5000){toast('Trading is closed for this round');return}
     const ask=side==='Y'?askY(m):askN(m),fee=feeC(qty,ask),total=qty*ask+fee;
     if(total>Math.floor(S.chips)){toast('Not enough chips: that costs '+fmt(total));return}
-    spend(total);S.pos.push({id:rid(),mid:m.id,q:m.q,side,n:qty,px:ask,fee,cost:total});
+    spend(total);S.pos.push({id:rid(),mid:m.id,q:m.kind==='e'?m.q+' ('+m.rd+')':m.q,side,n:qty,px:ask,fee,cost:total});
     touch();renderPos();
     toast('Bought '+qty+' '+(side==='Y'?'YES':'NO')+' at '+ask+'¢ for '+fmt(total)+' (fee '+fee+'). Right: +'+fmt(qty*100-total)+', wrong: -'+fmt(total));
   }else if(sb){

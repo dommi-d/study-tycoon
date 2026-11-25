@@ -72,22 +72,84 @@ function makeTurbine(parent,x,y,z,s){
 }
 makeTurbine(isl,-3.8,.4,-1.4,1);makeTurbine(isl,3.5,.4,-3.2,.9);
 
-/* sun tower: the desk. A solar flower on a terraced spire. */
-const tw=new T.Group();tw.position.set(0,.4,-.2);isl.add(tw);
-mesh(tw,CylG(1.2,1.4,.5,10),M(0xc4481f,{flatShading:true}),0,.25,0);
-mesh(tw,CylG(.55,.95,3.2,10),M(0xff9a3d,{flatShading:true}),0,2.1,0);
-function ring(y,r,n){
-  mesh(tw,TorG(r,.12),M(0x22d46a),0,y,0,Math.PI/2,0,0);
-  for(let i=0;i<n;i++){const a=i/n*6.283;mesh(tw,IcoG(.14),M(i%2?0x1fae5a:0xff3d6e,{flatShading:true}),Math.cos(a)*r,y+.1,Math.sin(a)*r)}
+/* centerpiece: grows with total businesses bought (no fixed tower). Six stages, from a sapling to a floating sun-spire. */
+const spin=[];
+const cg=new T.Group();cg.position.set(0,.4,-.2);isl.add(cg);
+const stages=[0,1,2,3,4,5].map(()=>{const g=new T.Group();g.scale.setScalar(.001);g.visible=false;cg.add(g);return g});
+mesh(cg,CylG(1.5,1.65,.3,16),M(0xc4481f,{flatShading:true}),0,.1,0);
+mesh(cg,TorG(1.5,.06,28),GOLD(),0,.27,0,Math.PI/2,0,0);
+function ringDeco(g,y,r,n){
+  mesh(g,TorG(r,.12),M(0x22d46a),0,y,0,Math.PI/2,0,0);
+  for(let i=0;i<n;i++){const a=i/n*6.283;mesh(g,IcoG(.14),M(i%2?0x1fae5a:0xff3d6e,{flatShading:true}),Math.cos(a)*r,y+.1,Math.sin(a)*r)}
 }
-ring(1.0,.95,9);ring(1.9,.8,8);ring(2.8,.66,7);
-mesh(tw,CylG(.18,.3,.6,8),BRASS(),0,3.95,0);
-[-1,1].forEach(s=>{mesh(tw,SphG(.55,14),GLASS(),s*1.6,.75,.2).castShadow=false;mesh(tw,IcoG(.28),M(0x22d46a,{flatShading:true}),s*1.6,.55,.2)});
-const flower=new T.Group();flower.position.set(0,4.45,0);flower.rotation.x=-.3;tw.add(flower);
-const mp=new T.Group(),hp=new T.Group();flower.add(mp,hp);
-for(let i=0;i<12;i++){const a=i/12*6.283;mesh(mp,BoxG(.16,.52,.05),M(i%2?0xffd23f:0xff8a1f),Math.sin(a)*.88,Math.cos(a)*.88,0,0,0,-a)}
-mesh(hp,CylG(.5,.5,.12,12),PANEL(),0,0,0,Math.PI/2,0,0);
-mesh(hp,TorG(.52,.05),GOLD(),0,0,0);
+function sunFlower(g,y,s,fast){
+  const f=new T.Group();f.position.set(0,y,0);f.rotation.x=-.3;f.scale.setScalar(s);g.add(f);
+  const a=new T.Group(),b=new T.Group();f.add(a,b);
+  for(let i=0;i<12;i++){const t=i/12*6.283;mesh(a,BoxG(.16,.52,.05),M(i%2?0xffd23f:0xff8a1f),Math.sin(t)*.88,Math.cos(t)*.88,0,0,0,-t)}
+  mesh(b,CylG(.5,.5,.12,12),PANEL(),0,0,0,Math.PI/2,0,0);
+  mesh(b,TorG(.52,.05),GOLD(),0,0,0);
+  spin.push([a,-1.6,-.15],[b,.6,.05]);
+}
+/* 0: a sapling and a glowing seed */
+(()=>{const g=stages[0];
+  mesh(g,CylG(.07,.12,.9,7),M(0xb5651d),0,.55,0);
+  [[0,1.15,0,.38],[.28,.95,.1,.26],[-.26,.9,-.1,.24]].forEach(p=>mesh(g,IcoG(p[3]),M(0x22d46a,{flatShading:true}),p[0],p[1],p[2]));
+  mesh(g,SphG(.09,8),M(0xff3d6e),.12,1.3,.1);
+})();
+/* 1: a little cabin with a green roof */
+(()=>{const g=stages[1];
+  mesh(g,BoxG(1.3,.8,1),M(0xffa63d),0,.7,0);
+  mesh(g,BoxG(1.5,.14,1.2),M(0x13a55a),0,1.18,0);
+  for(let i=0;i<5;i++)mesh(g,ConeG(.07,.24,5),M(0x22d46a),-.5+i*.25,1.36,(i%2?.2:-.2));
+  mesh(g,BoxG(.32,.5,.04),M(0x6a2f12),-.25,.55,.51);
+  mesh(g,BoxG(.35,.3,.04),GLOW(0xfff2a8,0xffcc33),.3,.78,.51);
+})();
+/* 2: two floors, a solar panel and a small turbine */
+(()=>{const g=stages[2];
+  mesh(g,BoxG(1.5,.9,1.15),M(0xffa63d),0,.75,0);
+  mesh(g,BoxG(1.1,.7,.9),M(0xffc65c),0,1.55,0);
+  mesh(g,BoxG(1.7,.14,1.35),M(0x13a55a),0,1.15,0);
+  mesh(g,BoxG(1.3,.14,1.1),M(0x13a55a),0,1.95,0);
+  mesh(g,BoxG(.9,.05,.6),PANEL(),0,2.06,0,-.35,0,0);
+  [-.35,.35].forEach(x=>mesh(g,BoxG(.3,.3,.04),GLOW(0x7ff7ff,0x17d6c0),x,.85,.59));
+  makeTurbine(g,.9,.25,.9,.6);
+})();
+/* 3: a terraced tower */
+(()=>{const g=stages[3];
+  [[1.7,0xff8a3d],[1.45,0xffa94d],[1.2,0xffc65c],[.95,0x2ee6c8]].forEach((t,i)=>{
+    const w=t[0],y=.7+i*.8;
+    mesh(g,BoxG(w,.75,w),M(t[1]),0,y,0);
+    mesh(g,BoxG(w*.65,.4,.03),GLOW(0x7ff7ff,0x17d6c0),0,y,w/2+.01);
+    mesh(g,BoxG(w+.25,.1,w+.25),M(0x22d46a),0,y+.42,0);
+  });
+  mesh(g,CylG(.08,.1,.8,8),BRASS(),0,4.3,0);makeTurbine(g,0,4.5,0,.5);
+})();
+/* 4: the sun tower with its solar flower */
+(()=>{const g=stages[4];
+  mesh(g,CylG(.65,1.05,3.4,10),M(0xff9a3d,{flatShading:true}),0,1.9,0);
+  ringDeco(g,.9,1.05,9);ringDeco(g,1.8,.9,8);ringDeco(g,2.7,.75,7);
+  mesh(g,CylG(.18,.3,.6,8),BRASS(),0,3.9,0);
+  sunFlower(g,4.4,1,0);
+})();
+/* 5: the advanced island core: a tall spire, a big flower, orbiting rings and a floating crystal */
+(()=>{const g=stages[5];
+  mesh(g,CylG(.55,1.1,4.2,10),M(0xff9a3d,{flatShading:true}),0,2.3,0);
+  ringDeco(g,.9,1.15,10);ringDeco(g,2,.95,9);ringDeco(g,3.1,.78,8);
+  mesh(g,CylG(.2,.34,.8,8),BRASS(),0,4.8,0);
+  sunFlower(g,5.6,1.35,0);
+  const core=new T.Group();core.position.set(0,7.3,0);g.add(core);
+  mesh(core,IcoG(.42),GLOW(0x9dffb0,0x3fe070),0,0,0);
+  const r1=new T.Group(),r2=new T.Group();core.add(r1,r2);
+  mesh(r1,TorG(.95,.05,28),GOLD(),0,0,0);mesh(r1,IcoG(.13),M(0xff3d6e,{flatShading:true}),.95,0,0);
+  mesh(r2,TorG(1.3,.04,32),BRASS(),0,0,0);mesh(r2,IcoG(.13),M(0x17d6c0,{flatShading:true}),-1.3,0,0);
+  r1.rotation.x=1.2;r2.rotation.x=.4;r2.rotation.y=.8;
+  spin.push([r1,0,0,'y',1.2,.4],[r2,0,0,'y',-.9,-.3]);
+  [[2.4,0],[-2.4,.6],[0,2.4],[0,-2.4]].forEach((p,i)=>{
+    const pn=new T.Group();pn.position.set(p[0],3.2+(i%2)*.5,p[1]);g.add(pn);
+    mesh(pn,BoxG(.9,.06,.6),PANEL(),0,0,0,-.3,i*.8,0);mesh(pn,SphG(.12,8),GOLD(),0,-.2,0);
+  });
+})();
+const center={stage:-1,pop:0,sc:[.001,.001,.001,.001,.001,.001],th:[0,2,5,9,14,22]};
 
 /* businesses */
 const BLD={
@@ -146,7 +208,14 @@ Object.keys(SLOT).forEach(k=>{
   const s=SLOT[k],g=BLD[k]();
   g.position.set(s[0],.4,s[1]);g.rotation.y=Math.atan2(s[0],s[1]);g.scale.setScalar(.001);g.visible=false;isl.add(g);
   const mk=mesh(isl,TorG(.55,.06,24),GLOW(0xffe27a,0xffc933),s[0],.46,s[1],Math.PI/2,0,0);
-  blds[k]={g,mk,own:0,pop:0,sc:.001};
+  const H={cart:1.5,copy:1.6,arcade:1.2,tutor:1.5,tower:3.7,bank:3.4}[k];
+  const t2=new T.Group(),t3=new T.Group(),t4=new T.Group();[t2,t3,t4].forEach(t=>{t.scale.setScalar(.001);t.visible=false;g.add(t)});
+  [-1,1].forEach(sx=>{mesh(t2,CylG(.04,.05,.9,6),BRASS(),sx*1.05,.45,.75);mesh(t2,SphG(.13,10),GLOW(0xfff2a8,0xffcc33),sx*1.05,.98,.75)});
+  makeTurbine(t3,-1.25,0,-.7,.42);mesh(t3,BoxG(.8,.05,.5),PANEL(),1.15,.35,-.6,-.4,0,0);
+  const halo=new T.Group();halo.position.y=H+.5;t4.add(halo);
+  mesh(halo,TorG(.8,.05,28),GOLD(),0,0,0,Math.PI/2,0,0);mesh(halo,IcoG(.15),M(0xff3d6e,{flatShading:true}),.8,0,0);mesh(halo,IcoG(.15),M(0x17d6c0,{flatShading:true}),-.8,0,0);
+  spin.push([halo,0,0,'y',1,.3]);
+  blds[k]={g,mk,own:0,pop:0,sc:.001,tiers:[t2,t3,t4],ts:[.001,.001,.001]};
 });
 
 /* sky: sunset-tinted clouds and fireflies */

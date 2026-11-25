@@ -1,18 +1,11 @@
-/* ---------- markets: every round lasts 5 minutes. Four event markets, then BTC and Gold. ---------- */
+/* ---------- markets: every round lasts 5 minutes. Four repeating event markets, then BTC and Gold. ---------- */
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const QS=[
-  'Will the Canopy Co-op solar output beat the forecast?',
-  'Will rain fill the Terrace Reservoir by dusk?',
+/* each event slot asks the same question every round, so its chart is one continuous line */
+const EQ=[
+  'Will rain fill the Terrace Reservoir again?',
+  'Will the council approve the next bill?',
   'Will the Greenline tram arrive on time?',
-  'Will the Seedbank report a record harvest?',
-  'Will the Wind Choir turbines top 90% capacity?',
-  'Will the airship Dandelion dock before sunset?',
-  'Will the Lantern Market sell out of tomatoes?',
-  'Will the River Council approve the new orchard?',
-  'Will the rooftop bees make more honey than last week?',
-  'Will the Sunrise Relay finish under four hours?',
-  'Will the Moss Street garden win best in bloom?',
-  'Will the tidal battery reach full charge by midnight?'
+  'Will the Canopy Co-op solar output beat the forecast?'
 ];
 const STEP=3000,ROUND=300000,KEEP=11*60000;
 /* simulated assets: annualized vol, strike increment, decimals, starting anchor, round offset */
@@ -67,7 +60,7 @@ function ensureAssets(now){
   Object.keys(AS).forEach(sym=>{
     if(!S.as[sym]||!S.as[sym].h)S.as[sym]=assetInit(sym,now);
     let cut=now-KEEP;
-    S.mk.forEach(m=>{if(m&&m.kind==='a'&&m.sym===sym)cut=Math.min(cut,m.start-STEP*2)});
+    S.mk.forEach(m=>{if(m&&m.kind==='a'&&m.sym===sym)cut=Math.min(cut,m.start-ROUND*2-STEP*2)});
     assetAdvance(sym,now,cut);
   });
 }
@@ -83,27 +76,40 @@ function quote(m,now){
 function newAsset(sym,now){
   const a=AS[sym],end=endFor(a.off,now),start=end-ROUND;
   const K=Math.round(priceAt(sym,start)/a.inc)*a.inc;
-  const m={id:rid(),kind:'a',sym,K,start,end,price:50,p:.5};
+  const m={id:rid(),kind:'a',sym,K,start,end,price:50,p:.5,rd:clock(start)+'–'+clock(end)};
   m.q='Will '+a.n+' be above '+fmtP(sym,K)+' at '+clock(end)+'?';
   quote(m,now);return m;
 }
 
-/* --- event markets: martingale price path, outcome drawn from the final price --- */
+/* --- event markets: martingale price path, outcome drawn from the final price. One continuous series per slot. --- */
+const evNext=(p,f)=>Math.max(.03,Math.min(.97,p+.05*(1+2*f)*Math.sqrt(p*(1-p))*(Math.random()*2-1)*1.732));
+/* fill the two rounds before the current one so the chart is never blank; each ends at 100 or 0 */
+function ghost(slot,curStart){
+  const h=S.hist[slot]=[];
+  for(let r=2;r>=1;r--){
+    const st=curStart-r*ROUND;let p=.2+Math.random()*.6;
+    h.push([st,Math.round(p*100)]);
+    for(let t=st+STEP;t<=st+ROUND;t+=STEP){p=evNext(p,(t-st)/ROUND);h.push([t,Math.round(p*100)])}
+    h.push([st+ROUND,Math.random()<p?100:0]);
+  }
+}
 function evAdvance(m,upTo){
-  const lim=Math.min(upTo,m.end);
+  const lim=Math.min(upTo,m.end),h=S.hist[m.slot];
   while(m.lt+STEP<=lim){
     m.lt+=STEP;
-    const f=(m.lt-m.start)/ROUND;
-    m.p=Math.max(.03,Math.min(.97,m.p+.05*(1+2*f)*Math.sqrt(m.p*(1-m.p))*(Math.random()*2-1)*1.732));
-    m.h.push([m.lt,Math.round(m.p*100)]);
+    m.p=evNext(m.p,(m.lt-m.start)/ROUND);
+    h.push([m.lt,Math.round(m.p*100)]);
   }
   m.price=Math.max(1,Math.min(99,Math.round(m.p*100)));
+  while(h.length>2&&h[1][0]<upTo-KEEP)h.shift();
 }
-function newEvent(slot,now,taken){
+function newEvent(slot,now){
+  if(!S.hist)S.hist=[[],[],[],[]];
   const end=endFor(EOFF[slot],now),start=end-ROUND,p0=.2+Math.random()*.6;
-  const used=new Set(taken.filter(Boolean).map(m=>m.q)),pool=QS.filter(q=>!used.has(q));
-  const q=pool.length?pool[Math.floor(Math.random()*pool.length)]:QS[0];
-  const m={id:rid(),kind:'e',q,p:p0,price:Math.round(p0*100),start,end,lt:start,h:[[start,Math.round(p0*100)]]};
+  const h=S.hist[slot]||(S.hist[slot]=[]);
+  if(!h.length||h[h.length-1][0]<start-STEP*3)ghost(slot,start);
+  S.hist[slot].push([start,Math.round(p0*100)]);
+  const m={id:rid(),kind:'e',slot,q:EQ[slot],rd:clock(start)+'–'+clock(end),p:p0,price:Math.round(p0*100),start,end,lt:start};
   evAdvance(m,now);return m;
 }
 
@@ -115,11 +121,17 @@ function refundOld(m){
   S.pos=S.pos.filter(p=>p.mid!==m.id);payout(back);touch();renderPos();
   toast('A market was replaced. Your bet was refunded: '+fmt(back));
 }
-function settleMk(m){
+/* decide the round: event markets draw from the final price and the chart jumps to 100 or 0 */
+function resolve(m){
+  if(m.kind==='a')return priceAt(m.sym,m.end)>m.K;
+  const out=Math.random()<m.p;
+  S.hist[m.slot].push([m.end,out?100:0]);
+  return out;
+}
+function settleMk(m,out){
   const mine=S.pos.filter(p=>p.mid===m.id);if(!mine.length)return;
-  let out,detail='';
-  if(m.kind==='a'){const fin=priceAt(m.sym,m.end);out=fin>m.K;detail=AS[m.sym].n+' closed '+fmtP(m.sym,fin)+' vs strike '+fmtP(m.sym,m.K)+'. '}
-  else out=Math.random()<m.p;
+  let detail='';
+  if(m.kind==='a'){const fin=priceAt(m.sym,m.end);detail=AS[m.sym].n+' closed '+fmtP(m.sym,fin)+' vs strike '+fmtP(m.sym,m.K)+'. '}
   let tot=0,cost=0;
   mine.forEach(p=>{cost+=posCost(p);if((p.side==='Y')===out)tot+=p.n*100});
   S.pos=S.pos.filter(p=>p.mid!==m.id);
@@ -128,33 +140,48 @@ function settleMk(m){
   const net=tot-cost;
   toast(detail+'Settled '+(out?'YES':'NO')+': '+(net>=0?'+':'-')+fmt(Math.abs(net))+' chips');
 }
-function newSlot(i,now,taken){return i<4?newEvent(i,now,taken):newAsset(i===4?'btc':'gold',now)}
-function slotOk(m,i){return !!m&&(i<4?m.kind==='e':(m.kind==='a'&&m.sym===(i===4?'btc':'gold')))}
+function newSlot(i,now){return i<4?newEvent(i,now):newAsset(i===4?'btc':'gold',now)}
+function slotOk(m,i){
+  if(!m)return false;
+  if(i<4)return m.kind==='e'&&m.slot===i&&m.q===EQ[i]&&!m.h;
+  return m.kind==='a'&&m.sym===(i===4?'btc':'gold');
+}
 function mkTick(){
   const now=Date.now();
+  if(!S.hist)S.hist=[[],[],[],[]];
   while(S.mk.length<6)S.mk.push(null);
   S.mk=S.mk.slice(0,6);
   S.mk.forEach((m,i)=>{if(m&&!slotOk(m,i)){refundOld(m);S.mk[i]=null}});
   ensureAssets(now);
   S.mk=S.mk.map((m,i)=>{
-    if(!m)return newSlot(i,now,S.mk);
+    if(!m)return newSlot(i,now);
     if(m.kind==='e')evAdvance(m,now);else quote(m,now);
-    if(now>=m.end){settleMk(m);return newSlot(i,now,S.mk)}
+    if(now>=m.end){settleMk(m,resolve(m));return newSlot(i,now)}
     return m;
   });
   renderMk();
 }
 
-/* --- chart: YES price for event markets, the asset price (with strike line) for BTC and Gold --- */
+/* --- chart: YES price for event markets, the asset price with per-round strike lines for BTC and Gold --- */
 function chart(m,now){
   const W=300,H=96,range=mkRange*60000,t0=now-range,asset=m.kind==='a';
-  const src=asset?S.as[m.sym].h:m.h,cur=asset?S.as[m.sym].price:m.price;
+  const src=asset?S.as[m.sym].h:(S.hist[m.slot]||[]),cur=asset?S.as[m.sym].price:m.price;
   const pts=src.filter(p=>p[0]>=t0-STEP*2);
   if(pts.length<2)return null;
   let lo=Infinity,hi=-Infinity;
   pts.forEach(p=>{lo=Math.min(lo,p[1]);hi=Math.max(hi,p[1])});
   lo=Math.min(lo,cur);hi=Math.max(hi,cur);
-  if(asset){lo=Math.min(lo,m.K);hi=Math.max(hi,m.K)}
+  const segs=[];
+  if(asset){
+    const inc=AS[m.sym].inc;
+    for(let k=0;k<3;k++){
+      const st=m.start-k*ROUND,en=Math.min(st+ROUND,now);
+      if(en<=t0)continue;
+      const Kk=k===0?m.K:Math.round(priceAt(m.sym,st)/inc)*inc;
+      segs.push({x1:Math.max(st,t0),x2:en,K:Kk,now:k===0});
+      lo=Math.min(lo,Kk);hi=Math.max(hi,Kk);
+    }
+  }
   let a,b;
   if(asset){const pad=Math.max((hi-lo)*.15,cur*.0002);a=lo-pad;b=hi+pad}
   else{const pad=Math.max(3,(hi-lo)*.15);a=Math.max(0,lo-pad);b=Math.min(100,hi+pad);if(b-a<12){a=Math.max(0,Math.min(a,88));b=a+12}}
@@ -164,12 +191,16 @@ function chart(m,now){
   const col=cur>=pts[0][1]?'#3fe6d2':'#ff7a66',gid='g'+esc(m.id);
   const area='M'+pl[0]+' L'+pl.slice(1).join(' L')+' L'+W+','+H+' L'+pl[0].split(',')[0]+','+H+' Z';
   let grid=[.25,.5,.75].map(f=>'<line x1="0" x2="'+W+'" y1="'+(H*f)+'" y2="'+(H*f)+'" stroke="rgba(255,255,255,.14)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>').join('');
-  let ky=null;
-  if(asset){
-    ky=Y(m.K);
-    grid+='<line x1="0" x2="'+W+'" y1="'+ky.toFixed(1)+'" y2="'+ky.toFixed(1)+'" stroke="#ffd34d" stroke-width="1.5" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"/>';
-    const xs=X(m.start);if(xs>0&&xs<W)grid+='<line x1="'+xs.toFixed(1)+'" x2="'+xs.toFixed(1)+'" y1="0" y2="'+H+'" stroke="rgba(255,211,77,.4)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>';
+  for(let k=0;k<3;k++){
+    const xs=X(m.start-k*ROUND);
+    if(xs>1&&xs<W-1)grid+='<line x1="'+xs.toFixed(1)+'" x2="'+xs.toFixed(1)+'" y1="0" y2="'+H+'" stroke="rgba(255,211,77,.45)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>';
   }
+  let ky=null;
+  segs.forEach(s=>{
+    const y=Y(s.K).toFixed(1);
+    if(s.now)ky=Y(s.K);
+    grid+='<line x1="'+X(s.x1).toFixed(1)+'" x2="'+X(s.x2).toFixed(1)+'" y1="'+y+'" y2="'+y+'" stroke="#ffd34d" stroke-opacity="'+(s.now?1:.5)+'" stroke-width="'+(s.now?1.8:1.3)+'"'+(s.now?' stroke-dasharray="6 4"':'')+' vector-effect="non-scaling-stroke"/>';
+  });
   const svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+col+'" stop-opacity=".4"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>'+grid+'<path d="'+area+'" fill="url(#'+gid+')"/><polyline points="'+pl.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
   return{svg,a,b,ky};
 }
@@ -182,8 +213,10 @@ function renderMk(){
     let c=g.querySelector('[data-id="'+m.id+'"]');
     if(!c){
       c=document.createElement('div');c.className='mk';c.dataset.id=m.id;c.style.order=i;
-      c.innerHTML='<h3></h3><div class="row sp live"><span class="lp mono"></span><span class="ld mono"></span></div><div class="row sp" style="font-size:12px"><span class="mute">Round ends in</span><span class="cd mono"></span></div><div class="px"><div class="y"></div><div class="n"></div></div><div class="chart"><div class="cv"></div><span class="yh"></span><span class="yl"></span><span class="ys"></span></div><div class="cx"><span class="c1"></span><span>now</span></div><div class="row" style="flex-wrap:nowrap"><button class="btn buy" data-buy-mk="'+esc(m.id)+'" data-side="Y"><span class="t"></span><small class="s"></small></button><button class="btn buy no" data-buy-mk="'+esc(m.id)+'" data-side="N"><span class="t"></span><small class="s"></small></button></div>';
-      c.querySelector('h3').textContent=m.q;g.append(c);
+      c.innerHTML='<h3></h3><div class="row sp live"><span class="lp mono"></span><span class="ld mono"></span></div><div class="row sp" style="font-size:12px"><span class="mute rl"></span><span class="cd mono"></span></div><div class="px"><div class="y"></div><div class="n"></div></div><div class="chart"><div class="cv"></div><span class="yh"></span><span class="yl"></span><span class="ys"></span></div><div class="cx"><span class="c1"></span><span>now</span></div><div class="row" style="flex-wrap:nowrap"><button class="btn buy" data-buy-mk="'+esc(m.id)+'" data-side="Y"><span class="t"></span><small class="s"></small></button><button class="btn buy no" data-buy-mk="'+esc(m.id)+'" data-side="N"><span class="t"></span><small class="s"></small></button></div>';
+      c.querySelector('h3').textContent=m.q;
+      c.querySelector('.rl').textContent='5-min round '+(m.rd||'')+' · ends in';
+      g.append(c);
     }
     const asset=m.kind==='a';
     c.querySelector('.cd').textContent=fmtMs(m.end-now);
@@ -236,7 +269,7 @@ $('#p-mk').addEventListener('click',e=>{
     if(m.end-Date.now()<5000){toast('Trading is closed for this round');return}
     const ask=side==='Y'?askY(m):askN(m),fee=feeC(qty,ask),total=qty*ask+fee;
     if(total>Math.floor(S.chips)){toast('Not enough chips: that costs '+fmt(total));return}
-    spend(total);S.pos.push({id:rid(),mid:m.id,q:m.q,side,n:qty,px:ask,fee,cost:total});
+    spend(total);S.pos.push({id:rid(),mid:m.id,q:m.kind==='e'?m.q+' ('+m.rd+')':m.q,side,n:qty,px:ask,fee,cost:total});
     touch();renderPos();
     toast('Bought '+qty+' '+(side==='Y'?'YES':'NO')+' at '+ask+'¢ for '+fmt(total)+' (fee '+fee+'). Right: +'+fmt(qty*100-total)+', wrong: -'+fmt(total));
   }else if(sb){

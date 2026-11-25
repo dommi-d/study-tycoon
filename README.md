@@ -11,10 +11,10 @@ To host it, enable GitHub Pages for this repo and serve the `main` branch from t
 ## How it works
 
 - **Work to earn.** Start the timer to earn 10 chips a minute, with a focus multiplier that grows to x2 over a long session. Finished tasks, a daily goal and a day streak pay bonuses.
-- **Tycoon.** Six businesses add chips per minute while the timer runs, and each one appears on the 3D island.
+- **Tycoon.** Six businesses add chips per minute while the timer runs, and each one appears on the 3D island and upgrades at 3, 6 and 10 owned. The island's centerpiece grows with your total buys, from a sapling to a cabin, workshop, terrace tower, sun tower and finally a floating sun spire.
 - **Blackjack.** Pays 3:2, with hit, stand and double.
 - **Video poker.** Jacks or better, with a how-to-play guide in the room.
-- **Markets.** Every round lasts 5 minutes. Four event markets plus simulated BTC and Gold "above the strike" markets. Contracts pay 100 chips if right, with the Kalshi taker fee formula, 2 / 5 / 10 minute charts, and a fresh strike each round.
+- **Markets.** Every round lasts 5 minutes. Four repeating event questions (one continuous chart each) plus simulated BTC and Gold "above the strike" markets. Contracts pay 100 chips if right, with the Kalshi taker fee formula, 2 / 5 / 10 minute charts, and a fresh strike each round.
 
 BTC and Gold prices are simulated (stochastic volatility with clustering and jumps), anchored near real levels. They are not live data.
 
