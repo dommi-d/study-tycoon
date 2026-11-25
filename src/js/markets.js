@@ -304,6 +304,6 @@ $('#p-mk').addEventListener('click',e=>{
 $('#mkGrid').insertAdjacentHTML('beforebegin','<div class="row" style="margin:0 0 12px"><label for="mkQty" class="mute">Contracts per trade</label><input id="mkQty" type="number" min="1" value="5" style="width:84px"><span class="mute" style="margin-left:10px">Chart</span><span id="mkRng" class="row" style="gap:6px"></span><span id="posTot" class="mono" style="margin-left:auto;font-size:14px"></span></div>');
 renderRng();
 showTab('tycoon');renderBj();renderVp();
-boot().then(()=>{mkTick();renderPos()});
+boot().then(()=>{mkTick();renderPos();tdInit();chInit()});
 setInterval(tick,1000);
 setInterval(mkTick,2000);

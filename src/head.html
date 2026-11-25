@@ -69,6 +69,17 @@ ul.tasks{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
 .biz .btn.primary{background:linear-gradient(180deg,#34285a,#171030);border-color:#6a55b0;color:#ffe066;box-shadow:0 4px 0 #000}
 .mk{background:rgba(3,34,54,.85);color:var(--txt);border:2px solid rgba(255,194,26,.55);border-radius:20px;padding:14px;display:grid;gap:8px;box-shadow:0 6px 0 rgba(0,0,0,.3)}
 .mp:empty{display:none}.mp .pr{padding:6px 0;border-top:1px dashed rgba(255,255,255,.2);display:grid;gap:3px}
+.tdcard{--c:#fff;text-align:left;display:grid;gap:3px;border:3px solid var(--c);background:rgba(3,34,54,.8);color:#fff;border-radius:16px;padding:10px 12px;cursor:pointer;font:400 14px var(--body,inherit)}
+.tdcard b{font:400 17px var(--disp);color:var(--c)}.tdcard em{font-style:normal;font-size:12px;color:#ffe066}.tdcard small{font-size:12px;opacity:.85}
+.tdcard.on{background:rgba(255,255,255,.2);box-shadow:0 0 0 3px #fff}
+.td-shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.chboard{display:grid;grid-template-columns:repeat(8,1fr);width:min(100%,520px);aspect-ratio:1;border:4px solid #ffc21a;border-radius:10px;overflow:hidden;margin-bottom:10px;user-select:none}
+.chsq{display:flex;align-items:center;justify-content:center;font-size:min(7.6vw,42px);line-height:1;cursor:pointer;position:relative}
+.chsq.l{background:#bdf3c8}.chsq.d{background:#2fae72}.chsq.sel{outline:4px solid #ffc21a;outline-offset:-4px}
+.chsq.mv::after{content:"";width:28%;height:28%;border-radius:50%;background:rgba(255,194,26,.85);position:absolute}
+.chsq.cap::after{content:"";inset:6%;border-radius:50%;border:4px solid rgba(255,90,70,.9);position:absolute}
+.chsq.last{box-shadow:inset 0 0 0 100px rgba(255,230,90,.35)}
+.chw{color:#fff;text-shadow:0 0 2px #000,0 0 2px #000,0 1px 3px #000}.chb{color:#0a2a33}
 .mk h3{margin:0;font:400 17px/1.25 var(--disp)}
 .hand{display:flex;gap:10px;flex-wrap:wrap;min-height:90px;align-items:center;perspective:600px}
 .pc{width:56px;height:80px;background:linear-gradient(160deg,#fff,var(--card));color:var(--cardink);border-radius:10px;display:grid;place-items:center;font:400 24px var(--disp);box-shadow:0 5px 0 #b9b08a,0 10px 14px rgba(0,0,0,.4);position:relative;transform:rotateX(14deg);transition:transform .15s;border:2px solid #1a1a2e}

@@ -3,7 +3,7 @@ const fmt=n=>Math.floor(n).toLocaleString('en-US');
 const ds=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const today=()=>ds(new Date());
 const yesterday=()=>ds(new Date(Date.now()-864e5));
-const DEF=()=>({chips:100,earned:0,secs:0,since:0,day:today(),todaySecs:0,goal:120,streak:0,lastGoalDay:'',tasks:[],own:{},bj:{w:0,l:0},mk:[],pos:[],savedAt:0});
+const DEF=()=>({chips:100,earned:0,secs:0,since:0,day:today(),todaySecs:0,goal:120,streak:0,lastGoalDay:'',tasks:[],own:{},bj:{w:0,l:0},mk:[],pos:[],td:{round:1,ammo:0,towers:[],live:false,wins:0,losses:0},chess:{g:null,live:false,paid:0,wins:0,lv:0,msg:""},savedAt:0});
 let S=DEF(),dirty=false;
 const touch=()=>{dirty=true};
 let tt;
@@ -122,7 +122,7 @@ $('#p-tycoon').addEventListener('click',e=>{
 /* ---------- tabs ---------- */
 function showTab(t){
   document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.t===t)));
-  ['tycoon','bj','vp','mk'].forEach(k=>{$('#p-'+k).hidden=k!==t});
+  ['tycoon','bj','vp','mk','td','ch'].forEach(k=>{$('#p-'+k).hidden=k!==t});
 }
 $('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(b)showTab(b.dataset.t)};
 
@@ -138,8 +138,8 @@ function flush(){if(!dirty)return;localSave();if(saving)return;dirty=false;cloud
 setInterval(flush,6000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
 window.addEventListener('pagehide',flush);
-const adopt=o=>{S=Object.assign(DEF(),o);if(!S.bj)S.bj={w:0,l:0}};
-function renderAll(){renderBal();renderDesk();renderTasks();renderTycoon();$('#goalIn').value=S.goal;renderMk();renderPos()}
+const adopt=o=>{S=Object.assign(DEF(),o);if(!S.bj)S.bj={w:0,l:0};if(!S.td)S.td=DEF().td;if(!S.chess)S.chess=DEF().chess};
+function renderAll(){renderBal();renderDesk();renderTasks();renderTycoon();$('#goalIn').value=S.goal;renderMk();renderPos();if(typeof tdRender==='function')tdRender();if(typeof chRender==='function')chRender()}
 async function boot(){
   let local=null;try{local=JSON.parse(localStorage.getItem('studystakes'))}catch(e){}
   if(local&&typeof local==='object')adopt(local);

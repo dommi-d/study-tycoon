@@ -15,6 +15,8 @@ To host it, enable GitHub Pages for this repo and serve the `main` branch from t
 - **Blackjack.** Pays 3:2, with hit, stand and double.
 - **Video poker.** Jacks or better, with a how-to-play guide in the room.
 - **Markets.** Every round lasts 5 minutes. Four repeating event questions (one continuous chart each) plus simulated BTC and Gold "above the strike" markets. Contracts pay 100 chips if right, with the Kalshi taker fee formula, 2 / 5 / 10 minute charts, and a fresh strike each round.
+- **Sun Guard (tower defense).** Five towers from easy to advanced, each bought with chips, and every shot uses ammo that also costs chips. Win a 10-wave round for a chip prize and keep your towers and ammo. Lose, or leave mid-round, and all towers and ammo are gone.
+- **Chess.** You play White against the house at three levels. Every move you make costs chips. Checkmate pays a prize, a draw refunds half the fees.
 
 BTC and Gold prices are simulated (stochastic volatility with clustering and jumps), anchored near real levels. They are not live data.
 
@@ -27,6 +29,8 @@ src/js/core.js       state, work timer, tasks, tycoon, saving
 src/js/cards.js      blackjack and video poker
 src/js/world-a.js    3D island scene (three.js): terrain and buildings
 src/js/world-b.js    3D island scene: coins, camera, animation loop
+src/js/td.js         Sun Guard tower defense
+src/js/chess.js      chess engine and board
 src/js/markets.js    prediction markets and startup
 build.sh             assembles src/ into index.html
 index.html           built standalone page (committed so Pages can serve it)

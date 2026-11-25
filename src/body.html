@@ -48,6 +48,8 @@
   <button class="tab" role="tab" data-t="bj">Blackjack</button>
   <button class="tab" role="tab" data-t="vp">Video poker</button>
   <button class="tab" role="tab" data-t="mk">Markets</button>
+  <button class="tab" role="tab" data-t="td">Sun Guard</button>
+  <button class="tab" role="tab" data-t="ch">Chess</button>
 </nav>
 
 <div class="floor">
@@ -118,6 +120,38 @@
       <p style="margin:8px 0">Every round lasts 5 minutes, then settles and a new round opens. The four event markets ask the same question every round, so each has one continuous chart: it jumps to 100 (YES) or 0 (NO) when a round settles, and the next round reopens at a fresh price. Gold vertical lines mark where each round starts. The BTC and Gold markets follow a simulated price that moves like the real thing (this is not live data). Each round asks whether the price will finish <b>above the strike</b>, and the dashed gold line on the chart is that strike. The YES price rises when the live price is above the strike and falls when it is below, and it snaps toward 99 or 1 as time runs out. When the round ends it settles against the final price, and the next round sets a fresh strike near the current price.</p>
     </details>
     <div class="mk-grid" id="mkGrid"></div>
+  </section>
+  <section id="p-td" hidden>
+    <div class="row sp"><h2>Sun Guard &middot; tower defense</h2><span class="mono" id="tdStats" style="font-size:14px"></span></div>
+    <details class="how" open>
+      <summary>How to play (tap to hide)</summary>
+      <p style="margin:8px 0 0">Smog blobs roll along the gold road. Stop them before they reach the right edge. Each one that gets through costs lives equal to its size, and you start every round with 40.</p>
+      <ol>
+        <li><b>Buy a tower</b> with chips, tap the map to place it beside the road, then tap it to upgrade (3 levels).</li>
+        <li><b>Buy ammo.</b> Every shot uses ammo (shown on each tower card) and ammo costs chips. No ammo, no shooting.</li>
+        <li><b>Send waves.</b> Pop a blob and it shrinks a size, so big ones take several hits. Wave 10 brings an airship that splits into blobs.</li>
+        <li><b>Win</b> all 10 waves and you get a chip prize, and keep your towers and ammo for the harder next round. <b>Lose</b> and every tower and every bit of ammo is gone. Closing the page mid-round counts as a loss.</li>
+      </ol>
+    </details>
+    <canvas id="tdCv" style="width:100%;aspect-ratio:640/400;display:block;border-radius:18px;border:3px solid #ffc21a;touch-action:manipulation;background:#2c9"></canvas>
+    <div class="row" style="margin:12px 0"><button id="tdGo" data-td-go="1" class="btn primary">Start round</button><button id="tdSpeed" data-td-speed="1" class="btn sm">Speed x1</button><button id="tdAuto" data-td-auto="1" class="btn sm">Auto-send: off</button><button id="tdForfeit" data-td-ff="1" class="btn sm stop" hidden>Give up</button></div>
+    <div class="msg" id="tdMsg"></div>
+    <div id="tdSel" class="how" hidden></div>
+    <h3 style="margin:14px 0 8px">Towers</h3>
+    <div id="tdShop" class="td-shop"></div>
+    <h3 style="margin:14px 0 8px">Ammo</h3>
+    <div class="row" id="tdAmmoBtns"></div>
+  </section>
+
+  <section id="p-ch" hidden>
+    <div class="row sp"><h2>Chess &middot; every move costs chips</h2><span class="mono" id="chStats" style="font-size:14px"></span></div>
+    <details class="how" open>
+      <summary>How this works (tap to hide)</summary>
+      <p style="margin:8px 0 0">You play White against the house. <b>Each move you make costs chips</b>, and the cost goes up with the level you pick. Win by checkmate for a prize, draw for a small refund, lose and the move fees are gone. Tap a piece, then tap where it should go. Castling, en passant and promotion (to a queen) all work.</p>
+    </details>
+    <div class="row" style="margin-bottom:10px"><label for="chLv" class="mute">Opponent</label><select id="chLv"></select><button id="chNew" class="btn primary">New game</button><button id="chRes" class="btn sm stop" hidden>Resign</button></div>
+    <div id="chBoard" class="chboard"></div>
+    <div class="msg" id="chMsg"></div>
   </section>
 </div>
 
