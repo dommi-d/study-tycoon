@@ -183,5 +183,5 @@ function statsRender(){
 }
 sideBtn.addEventListener('click',()=>{
   sideBody.hidden=!sideBody.hidden;sideBtn.setAttribute('aria-expanded',String(!sideBody.hidden));
-  sideBtn.textContent=sideBody.hidden?'Stats':'Close';statsRender();
+  statsRender();
 });

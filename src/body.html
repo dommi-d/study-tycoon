@@ -1,7 +1,8 @@
 <div class="wrap">
 <header class="bar">
   <div class="brand">Study Stakes<small id="rank">Rank 1 · Intern</small></div>
-  <div class="bal" id="bal"><i aria-hidden="true">&#9728;&#xFE0E;</i><div><b id="chips">0</b><span>chips</span></div></div>
+  <div class="bal" id="bal"><button type="button" class="sun" id="sideBtn" aria-label="Chip stats" aria-expanded="false" aria-controls="sideBody">&#9728;&#xFE0E;</button><div><b id="chips">0</b><span>chips</span></div></div>
+<div class="side-body" id="sideBody" hidden></div>
 </header>
 
 <section class="hero" aria-label="Your floating island. Drag to look around.">
@@ -158,9 +159,5 @@
 
 <p class="foot">Play money only. Chips come from time at your desk and finished tasks, and nothing here touches real cash. Progress saves automatically.</p>
 </div>
-<aside class="side" id="side" aria-label="Chip stats">
-  <button class="side-tab" id="sideBtn" aria-expanded="false" aria-controls="sideBody">Stats</button>
-  <div class="side-body" id="sideBody" hidden></div>
-</aside>
 <div class="toast" id="toast" role="status"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

@@ -20,7 +20,7 @@ To host it, enable GitHub Pages for this repo and serve the `main` branch from t
 
 BTC and Gold prices are simulated (stochastic volatility with clustering and jumps), anchored near real levels. They are not live data.
 
-- **Stats menu.** A side tab (closed by default) shows chips earned, won back and spent, and where each chip went.
+- **Stats menu.** Click the sun next to your chip total to open a stats panel (closed by default) shows chips earned, won back and spent, and where each chip went.
 
 ## Project layout
 
