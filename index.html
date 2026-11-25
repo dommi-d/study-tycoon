@@ -304,17 +304,16 @@ button.pc:hover:not(:disabled){transform:translateY(-4px) rotateX(4deg)}
         <li><b>Buy ammo.</b> Every shot uses ammo (shown on each tower card) and ammo costs chips. No ammo, no shooting.</li>
         <li><b>Send waves.</b> Pop a blob and it shrinks a size, so big ones take several hits. Wave 10 brings an airship that splits into blobs.</li>
         <li><b>Win</b> all 10 waves to finish the round. The <b>winning pot</b> is the round prize <b>plus every chip you spent on towers, upgrades and ammo</b>, and the pot grows as you spend. You get all of it back when the round ends. Every <b>5th round is a solar-prize round</b> that also pays back the full price of every tower on your map. You keep your towers and leftover ammo for the next, harder round. <b>Lose</b> and every tower and every bit of ammo is gone, with no pot. A round in progress is saved, so closing or reloading the page just pauses it.</li>
-        <li><b>Need more chips?</b> Press Pause (top right of the map) during a wave: the game freezes, and it also freezes by itself when you run out of ammo. It waits between waves too. Start the timer at the top and study, then buy towers, upgrades and ammo with what you earn and press Resume. Switching to another tab also pauses it.</li>
+        <li><b>Need more chips?</b> Press Pause (in the Lives tile above the map, or next to Speed) during a wave: the game freezes, and it also freezes by itself when you run out of ammo. It waits between waves too. Start the timer at the top and study, then buy towers, upgrades and ammo with what you earn and press Resume. Switching to another tab also pauses it.</li>
       </ol>
     </details>
     <div class="tdframe">
       <div id="tdStats" class="tdhud"></div>
       <div style="position:relative">
         <canvas id="tdCv" style="width:100%;aspect-ratio:640/400;display:block;touch-action:manipulation;background:#2c9"></canvas>
-        <button id="tdPause" data-td-pause="1" class="btn sm tdpause" hidden>Pause</button>
       </div>
     </div>
-    <div class="row" style="margin:12px 0"><button id="tdGo" data-td-go="1" class="btn primary">Start round</button><button id="tdSpeed" data-td-speed="1" class="btn sm">Speed x1</button><button id="tdAuto" data-td-auto="1" class="btn sm">Auto-send: off</button><button id="tdForfeit" data-td-ff="1" class="btn sm stop" hidden>Give up</button></div>
+    <div class="row" style="margin:12px 0"><button id="tdGo" data-td-go="1" class="btn primary">Start round</button><button id="tdPause" data-td-pause="1" class="btn sm" hidden>Pause</button><button id="tdSpeed" data-td-speed="1" class="btn sm">Speed x1</button><button id="tdAuto" data-td-auto="1" class="btn sm">Auto-send: off</button><button id="tdForfeit" data-td-ff="1" class="btn sm stop" hidden>Give up</button></div>
     <div class="msg" id="tdMsg"></div>
     <div id="tdSel" class="how" hidden></div>
     <h3 style="margin:14px 0 8px">Towers</h3>
@@ -953,7 +952,7 @@ function tdRender(){
   const go=$('#tdGo');
   go.textContent=R.phase==='wave'?'Wave '+(R.wave+1)+' running...':(R.wave===0?'Start round '+td.round:'Send wave '+(R.wave+1));
   go.disabled=R.phase==='wave';
-  const pb=$('#tdPause');pb.hidden=R.phase!=='wave';pb.textContent=R.paused?'\u25B6 Resume':'\u23F8 Pause';
+  const pb=$('#tdPause');pb.hidden=R.phase!=='wave';pb.textContent=R.paused?'\u25B6 Resume':'\u23F8 Pause';tdHudS='';
   $('#tdSpeed').textContent='Speed x'+R.speed;
   $('#tdAuto').textContent='Auto-send: '+(R.auto?'on':'off');
   const ff=$('#tdForfeit');ff.hidden=!td.live;if(!R._ff)ff.textContent='Give up';
@@ -963,11 +962,11 @@ function tdRender(){
 let tdHudS='';
 function tdHud(){
   const td=S.td,spent=td.spent||0,tw=tdSolar(td.round)?tdTowerVal():0,pr=tdPrize(td.round),pot=pr+spent+tw,wv=Math.min(TDWAVES,R.wave+(R.phase==='wave'?1:0));
-  const key=[td.round,wv,R.lives,td.ammo,Math.floor(S.chips)>=TDAMMO[0][1],pot].join('|');
+  const key=[td.round,wv,R.lives,td.ammo,Math.floor(S.chips)>=TDAMMO[0][1],pot,R.phase,R.paused].join('|');
   if(key===tdHudS)return;tdHudS=key;
   const solar=tdSolar(td.round),nextSolar=Math.ceil(td.round/5)*5;
   $('#tdStats').innerHTML=
-    '<div class="tdt life"><span class="k">\u2764\uFE0F Lives</span><span class="v">'+R.lives+'</span><div class="tb"><i style="width:'+Math.round(R.lives/TDLIVES*100)+'%"></i></div></div>'+
+    '<div class="tdt life"><span class="k">\u2764\uFE0F Lives</span><span class="v">'+R.lives+'</span>'+(R.phase==='wave'?'<button class="buy" data-td-pause="1">'+(R.paused?'\u25B6 Resume':'\u23F8 Pause')+'</button>':'')+'<div class="tb"><i style="width:'+Math.round(R.lives/TDLIVES*100)+'%"></i></div></div>'+
     '<div class="tdt ammo'+(td.ammo<30?' low':'')+'"><span class="k">\uD83C\uDF30 Ammo</span><span class="v">'+fmt(td.ammo)+'</span><span class="s">'+(td.ammo<30?'Running low!':'Every shot uses ammo')+'</span><button class="buy" data-td-ammo="0">+'+TDAMMO[0][0]+' for '+TDAMMO[0][1]+'</button></div>'+
     '<div class="tdt prize'+(solar?' solar':'')+'"><span class="k">\uD83E\uDE99 Winning pot'+(solar?' \u00b7 \u2600 Solar':'')+'</span><span class="v">'+fmt(pot)+'</span><span class="s">Prize '+fmt(pr)+' + '+fmt(spent)+' spent'+(solar?' + '+fmt(tw)+' towers':'')+(solar?'':' \u00b7 solar round at '+nextSolar)+'</span></div>'+
     '<div class="tdt wave"><span class="k">\uD83C\uDF0A Round '+td.round+'</span><span class="v">'+wv+'<small style="font-size:18px">/'+TDWAVES+'</small></span><div class="tb"><i style="width:'+Math.round(wv/TDWAVES*100)+'%;background:linear-gradient(90deg,#4cc3ff,#b5ecff)"></i></div></div>';

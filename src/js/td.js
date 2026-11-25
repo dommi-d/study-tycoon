@@ -275,7 +275,7 @@ function tdRender(){
   const go=$('#tdGo');
   go.textContent=R.phase==='wave'?'Wave '+(R.wave+1)+' running...':(R.wave===0?'Start round '+td.round:'Send wave '+(R.wave+1));
   go.disabled=R.phase==='wave';
-  const pb=$('#tdPause');pb.hidden=R.phase!=='wave';pb.textContent=R.paused?'\u25B6 Resume':'\u23F8 Pause';
+  const pb=$('#tdPause');pb.hidden=R.phase!=='wave';pb.textContent=R.paused?'\u25B6 Resume':'\u23F8 Pause';tdHudS='';
   $('#tdSpeed').textContent='Speed x'+R.speed;
   $('#tdAuto').textContent='Auto-send: '+(R.auto?'on':'off');
   const ff=$('#tdForfeit');ff.hidden=!td.live;if(!R._ff)ff.textContent='Give up';
@@ -285,11 +285,11 @@ function tdRender(){
 let tdHudS='';
 function tdHud(){
   const td=S.td,spent=td.spent||0,tw=tdSolar(td.round)?tdTowerVal():0,pr=tdPrize(td.round),pot=pr+spent+tw,wv=Math.min(TDWAVES,R.wave+(R.phase==='wave'?1:0));
-  const key=[td.round,wv,R.lives,td.ammo,Math.floor(S.chips)>=TDAMMO[0][1],pot].join('|');
+  const key=[td.round,wv,R.lives,td.ammo,Math.floor(S.chips)>=TDAMMO[0][1],pot,R.phase,R.paused].join('|');
   if(key===tdHudS)return;tdHudS=key;
   const solar=tdSolar(td.round),nextSolar=Math.ceil(td.round/5)*5;
   $('#tdStats').innerHTML=
-    '<div class="tdt life"><span class="k">\u2764\uFE0F Lives</span><span class="v">'+R.lives+'</span><div class="tb"><i style="width:'+Math.round(R.lives/TDLIVES*100)+'%"></i></div></div>'+
+    '<div class="tdt life"><span class="k">\u2764\uFE0F Lives</span><span class="v">'+R.lives+'</span>'+(R.phase==='wave'?'<button class="buy" data-td-pause="1">'+(R.paused?'\u25B6 Resume':'\u23F8 Pause')+'</button>':'')+'<div class="tb"><i style="width:'+Math.round(R.lives/TDLIVES*100)+'%"></i></div></div>'+
     '<div class="tdt ammo'+(td.ammo<30?' low':'')+'"><span class="k">\uD83C\uDF30 Ammo</span><span class="v">'+fmt(td.ammo)+'</span><span class="s">'+(td.ammo<30?'Running low!':'Every shot uses ammo')+'</span><button class="buy" data-td-ammo="0">+'+TDAMMO[0][0]+' for '+TDAMMO[0][1]+'</button></div>'+
     '<div class="tdt prize'+(solar?' solar':'')+'"><span class="k">\uD83E\uDE99 Winning pot'+(solar?' \u00b7 \u2600 Solar':'')+'</span><span class="v">'+fmt(pot)+'</span><span class="s">Prize '+fmt(pr)+' + '+fmt(spent)+' spent'+(solar?' + '+fmt(tw)+' towers':'')+(solar?'':' \u00b7 solar round at '+nextSolar)+'</span></div>'+
     '<div class="tdt wave"><span class="k">\uD83C\uDF0A Round '+td.round+'</span><span class="v">'+wv+'<small style="font-size:18px">/'+TDWAVES+'</small></span><div class="tb"><i style="width:'+Math.round(wv/TDWAVES*100)+'%;background:linear-gradient(90deg,#4cc3ff,#b5ecff)"></i></div></div>';

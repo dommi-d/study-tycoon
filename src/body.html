@@ -137,17 +137,16 @@
         <li><b>Buy ammo.</b> Every shot uses ammo (shown on each tower card) and ammo costs chips. No ammo, no shooting.</li>
         <li><b>Send waves.</b> Pop a blob and it shrinks a size, so big ones take several hits. Wave 10 brings an airship that splits into blobs.</li>
         <li><b>Win</b> all 10 waves to finish the round. The <b>winning pot</b> is the round prize <b>plus every chip you spent on towers, upgrades and ammo</b>, and the pot grows as you spend. You get all of it back when the round ends. Every <b>5th round is a solar-prize round</b> that also pays back the full price of every tower on your map. You keep your towers and leftover ammo for the next, harder round. <b>Lose</b> and every tower and every bit of ammo is gone, with no pot. A round in progress is saved, so closing or reloading the page just pauses it.</li>
-        <li><b>Need more chips?</b> Press Pause (top right of the map) during a wave: the game freezes, and it also freezes by itself when you run out of ammo. It waits between waves too. Start the timer at the top and study, then buy towers, upgrades and ammo with what you earn and press Resume. Switching to another tab also pauses it.</li>
+        <li><b>Need more chips?</b> Press Pause (in the Lives tile above the map, or next to Speed) during a wave: the game freezes, and it also freezes by itself when you run out of ammo. It waits between waves too. Start the timer at the top and study, then buy towers, upgrades and ammo with what you earn and press Resume. Switching to another tab also pauses it.</li>
       </ol>
     </details>
     <div class="tdframe">
       <div id="tdStats" class="tdhud"></div>
       <div style="position:relative">
         <canvas id="tdCv" style="width:100%;aspect-ratio:640/400;display:block;touch-action:manipulation;background:#2c9"></canvas>
-        <button id="tdPause" data-td-pause="1" class="btn sm tdpause" hidden>Pause</button>
       </div>
     </div>
-    <div class="row" style="margin:12px 0"><button id="tdGo" data-td-go="1" class="btn primary">Start round</button><button id="tdSpeed" data-td-speed="1" class="btn sm">Speed x1</button><button id="tdAuto" data-td-auto="1" class="btn sm">Auto-send: off</button><button id="tdForfeit" data-td-ff="1" class="btn sm stop" hidden>Give up</button></div>
+    <div class="row" style="margin:12px 0"><button id="tdGo" data-td-go="1" class="btn primary">Start round</button><button id="tdPause" data-td-pause="1" class="btn sm" hidden>Pause</button><button id="tdSpeed" data-td-speed="1" class="btn sm">Speed x1</button><button id="tdAuto" data-td-auto="1" class="btn sm">Auto-send: off</button><button id="tdForfeit" data-td-ff="1" class="btn sm stop" hidden>Give up</button></div>
     <div class="msg" id="tdMsg"></div>
     <div id="tdSel" class="how" hidden></div>
     <h3 style="margin:14px 0 8px">Towers</h3>
