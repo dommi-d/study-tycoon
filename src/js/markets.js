@@ -243,15 +243,31 @@ function renderMk(){
     bs[1].querySelector('.t').textContent='Buy NO '+an+'¢';
     bs[1].querySelector('.s').textContent='+'+(100-an)+' if right, -'+an+' if wrong';
   });
-  document.querySelectorAll('[data-pv]').forEach(el=>{
-    const p=S.pos.find(z=>z.id===el.dataset.pv),m=p&&S.mk.find(z=>z&&z.id===p.mid);
-    if(m){const bid=p.side==='Y'?bidY(m):bidN(m);el.textContent='worth '+fmt(Math.max(0,p.n*bid-feeC(p.n,bid)))}
+  updPos();
+}
+const pnlTxt=v=>(v>=0?'+':'-')+fmt(Math.abs(v));
+const pnlCol=v=>v>0?'#3fe6d2':v<0?'#ff7a66':'inherit';
+function posWorth(p){
+  const m=S.mk.find(z=>z&&z.id===p.mid);if(!m)return null;
+  const bid=p.side==='Y'?bidY(m):bidN(m);return Math.max(0,p.n*bid-feeC(p.n,bid));
+}
+/* live numbers: what you paid, what you could sell for right now, and the difference */
+function updPos(){
+  let paid=0,worth=0;
+  S.pos.forEach(p=>{
+    const w=posWorth(p),c=posCost(p);if(w==null)return;
+    paid+=c;worth+=w;
+    const r=document.querySelector('[data-pr="'+p.id+'"]');if(!r)return;
+    r.querySelector('.pw').textContent=fmt(w);
+    const d=r.querySelector('.pp');d.textContent=pnlTxt(w-c);d.style.color=pnlCol(w-c);
   });
+  const t=document.getElementById('posTot');
+  if(t)t.innerHTML='Total paid <b>'+fmt(paid)+'</b> &middot; worth now <b>'+fmt(worth)+'</b> &middot; <b style="color:'+pnlCol(worth-paid)+'">'+pnlTxt(worth-paid)+'</b>';
 }
 function renderPos(){
   const el=$('#mkPos');
   if(!S.pos.length){el.textContent='No open positions.';return}
-  el.innerHTML=S.pos.map(p=>{const c=posCost(p);return'<div class="row sp" style="padding:6px 0;border-bottom:1px solid var(--feltline)"><span>'+esc(p.q)+' <b>'+(p.side==='Y'?'YES':'NO')+'</b> x'+p.n+' at '+p.px+'¢, paid '+fmt(c)+', wins +'+fmt(p.n*100-c)+'</span><span class="row"><span data-pv="'+esc(p.id)+'"></span><button class="btn sm" data-sell="'+esc(p.id)+'">Sell</button></span></div>'}).join('');
+  el.innerHTML='<div id="posTot" class="mono" style="padding:4px 0 8px"></div>'+S.pos.map(p=>{const c=posCost(p);return'<div data-pr="'+esc(p.id)+'" style="padding:8px 0;border-bottom:1px solid var(--feltline)"><div><b>'+(p.side==='Y'?'YES':'NO')+'</b> x'+p.n+' at '+p.px+'\u00a2 &middot; '+esc(p.q)+'</div><div class="row sp" style="flex-wrap:wrap;margin-top:4px"><span class="mono" style="font-size:13px">Paid <b>'+fmt(c)+'</b> &middot; Worth now <b class="pw"></b> &middot; <b class="pp"></b> &middot; <span class="mute">pays '+fmt(p.n*100)+' if right</span></span><button class="btn sm" data-sell="'+esc(p.id)+'">Sell now</button></div></div>'}).join('');
   renderMk();
 }
 function renderRng(){
