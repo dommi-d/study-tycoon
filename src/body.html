@@ -1,0 +1,129 @@
+<div class="wrap">
+<header class="bar">
+  <div class="brand">Study Stakes<small id="rank">Rank 1 · Intern</small></div>
+  <div class="bal" id="bal"><i aria-hidden="true">&#9728;&#xFE0E;</i><div><b id="chips">0</b><span>chips</span></div></div>
+</header>
+
+<section class="hero" aria-label="Your floating island. Drag to look around.">
+  <div id="stage"></div>
+  <div class="hero-hud"><span class="tag" id="heroTag">Your island</span></div>
+</section>
+
+<section class="desk">
+  <div class="panel">
+    <h2>The desk</h2>
+    <div class="row sp">
+      <div class="clock mono" id="clock">00:00:00</div>
+      <span class="tag" id="mult" title="Focus multiplier grows the longer you stay on one session">x1.00</span>
+    </div>
+    <div class="row" style="margin:14px 0">
+      <button id="startBtn" class="btn primary">Start working</button>
+      <span class="mute mono" id="rate" style="font-size:13px"></span>
+    </div>
+    <div class="row sp" style="margin-bottom:6px">
+      <span class="mute" style="font-size:13px">Daily goal</span>
+      <span class="row" style="gap:6px"><input id="goalIn" type="number" min="10" max="900" step="5" style="width:78px"><span class="mute" style="font-size:13px">min</span></span>
+    </div>
+    <div class="meter"><i id="goalBar"></i></div>
+    <div class="stats">
+      <div class="stat"><b id="sToday">0m</b><span>Today</span></div>
+      <div class="stat"><b id="sAll">0h</b><span>All time</span></div>
+      <div class="stat"><b id="sStreak">0</b><span>Day streak</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Progress</h2>
+    <form id="taskForm" class="row" style="flex-wrap:nowrap">
+      <input id="taskIn" type="text" maxlength="80" placeholder="What are you getting done?" style="flex:1" autocomplete="off">
+      <button class="btn">Add</button>
+    </form>
+    <ul class="tasks" id="tasks"></ul>
+    <p class="mute" id="taskNote" style="font-size:13px;margin:12px 0 0"></p>
+  </div>
+</section>
+
+<nav class="tabs" role="tablist" id="tabs">
+  <button class="tab" role="tab" data-t="tycoon">Tycoon</button>
+  <button class="tab" role="tab" data-t="bj">Blackjack</button>
+  <button class="tab" role="tab" data-t="vp">Video poker</button>
+  <button class="tab" role="tab" data-t="mk">Markets</button>
+</nav>
+
+<div class="floor">
+  <section id="p-tycoon" hidden></section>
+
+  <section id="p-bj" hidden>
+    <div class="row sp"><h2>Blackjack &middot; pays 3:2</h2>
+      <div class="row" style="gap:6px"><input id="bjBet" type="number" min="1" value="50" style="width:96px" aria-label="Blackjack bet">
+      <button class="btn sm" data-bet="bjBet" data-f="0.5">1/2</button><button class="btn sm" data-bet="bjBet" data-f="2">2x</button><button class="btn sm" data-bet="bjBet" data-f="max">Max</button></div></div>
+    <div class="mute">Dealer <span class="mono" id="bjDV"></span></div>
+    <div class="hand" id="bjD"></div>
+    <div class="mute">You <span class="mono" id="bjPV"></span></div>
+    <div class="hand" id="bjP"></div>
+    <div class="msg" id="bjMsg">Place a bet and deal.</div>
+    <div class="row"><button id="bjDeal" class="btn primary">Deal</button><button id="bjHit" class="btn" disabled>Hit</button><button id="bjStand" class="btn" disabled>Stand</button><button id="bjDbl" class="btn" disabled>Double</button></div>
+  </section>
+
+  <section id="p-vp" hidden>
+    <div class="row sp"><h2>Video poker &middot; jacks or better</h2>
+      <div class="row" style="gap:6px"><input id="vpBet" type="number" min="1" value="25" style="width:96px" aria-label="Poker bet">
+      <button class="btn sm" data-bet="vpBet" data-f="0.5">1/2</button><button class="btn sm" data-bet="vpBet" data-f="2">2x</button><button class="btn sm" data-bet="vpBet" data-f="max">Max</button></div></div>
+    <details class="how" open>
+      <summary>New to poker? How to play (tap to hide)</summary>
+      <p style="margin:8px 0 0">This is video poker. You play alone against the paytable, not against other people. The goal is to end with a good five-card poker hand.</p>
+      <h3>Each round</h3>
+      <ol>
+        <li><b>Bet.</b> Type an amount (or use 1/2, 2x, Max) and press <b>Deal</b>. You get five cards.</li>
+        <li><b>Hold.</b> Tap the cards you want to keep. Held cards lift up and say HOLD.</li>
+        <li><b>Draw.</b> Press <b>Draw</b>. Every card you did not hold is swapped for a new one, once.</li>
+        <li><b>Get paid.</b> If your final five cards make a hand in the table below, you win your bet times the number on the right. Otherwise you lose the bet.</li>
+      </ol>
+      <h3>Winning hands, best to worst</h3>
+      <div class="tbl"><table>
+        <tr><th>Hand</th><th>What it looks like</th><th>Pays</th></tr>
+        <tr><td>Royal flush</td><td>10, J, Q, K, A, all the same suit</td><td>250x</td></tr>
+        <tr><td>Straight flush</td><td>Five in a row, all the same suit (like 5-6-7-8-9)</td><td>50x</td></tr>
+        <tr><td>Four of a kind</td><td>Four cards of the same rank (like four 8s)</td><td>25x</td></tr>
+        <tr><td>Full house</td><td>Three of a kind plus a pair (like 9-9-9-4-4)</td><td>9x</td></tr>
+        <tr><td>Flush</td><td>Any five cards of the same suit</td><td>6x</td></tr>
+        <tr><td>Straight</td><td>Five in a row, any suits. The ace works high (10-J-Q-K-A) or low (A-2-3-4-5)</td><td>4x</td></tr>
+        <tr><td>Three of a kind</td><td>Three cards of the same rank</td><td>3x</td></tr>
+        <tr><td>Two pair</td><td>Two different pairs (like K-K-7-7)</td><td>2x</td></tr>
+        <tr><td>Jacks or better</td><td>One pair of Jacks, Queens, Kings or Aces. Lower pairs do not pay.</td><td>1x (bet back)</td></tr>
+      </table></div>
+      <h3>Easy tips</h3>
+      <ul>
+        <li>Always keep a hand that already pays, like two pair, three of a kind, a straight or a flush.</li>
+        <li>Keep any pair. A pair of Jacks or better already pays, and a lower pair is a good start toward three of a kind.</li>
+        <li>With four cards to a flush (four of one suit) or four in a row, hold those four and draw one. It does not always land, but it pays well when it does.</li>
+        <li>With no pair, keep your Jacks, Queens, Kings and Aces. Pairing one of them pays.</li>
+        <li>If nothing helps, hold nothing and draw five fresh cards.</li>
+        <li>Start with small bets while you learn. Most hands lose, and wins come in streaks.</li>
+      </ul>
+    </details>
+    <div class="hand" id="vpHand" style="align-items:flex-start"></div>
+    <div class="msg" id="vpMsg">Place a bet and deal. Tap cards to hold them.</div>
+    <div class="row" style="margin-bottom:16px"><button id="vpGo" class="btn primary">Deal</button></div>
+    <div class="pay" id="vpPay"></div>
+  </section>
+
+  <section id="p-mk" hidden>
+    <div class="row sp"><h2>Markets &middot; each contract pays 100 if right</h2><span class="mute mono" style="font-size:12px">simulated events, play money</span></div>
+    <details class="how" open>
+      <summary>How market payouts work (tap to hide)</summary>
+      <p style="margin:8px 0">Each market asks a yes/no question. The price in cents is the crowd's chance that the answer is YES. A YES contract at 41&cent; costs 41 chips. If the market settles YES, every YES contract pays <b>100 chips back</b>, so your profit is 59. If it settles NO, it pays nothing and you lose the 41. NO contracts work the other way around and cost 100 minus the YES price.</p>
+      <p style="margin:8px 0">Cheap contracts pay more when they hit but hit less often. A 1&cent; contract returns 100 if right (99 profit). A 91&cent; contract returns the same 100 but only 9 profit.</p>
+      <p style="margin:8px 0">Each buy and each early sell pays a small fee, using the same taker formula Kalshi publishes: 7% &times; contracts &times; price &times; (1 &minus; price), rounded up to the next whole chip. It is biggest near 50&cent;. You can sell any time before settlement at the current bid. Charts show the last 2, 5 or 10 minutes.</p>
+      <p style="margin:8px 0">Every round lasts 5 minutes, then settles and a new round opens. The BTC and Gold markets follow a simulated price that moves like the real thing (this is not live data). Each round asks whether the price will finish <b>above the strike</b>, and the dashed gold line on the chart is that strike. The YES price rises when the live price is above the strike and falls when it is below, and it snaps toward 99 or 1 as time runs out. When the round ends it settles against the final price, and the next round sets a fresh strike near the current price.</p>
+    </details>
+    <div class="mk-grid" id="mkGrid"></div>
+    <h2 style="margin-top:22px">Your positions</h2>
+    <div id="mkPos" class="pos">No open positions.</div>
+  </section>
+</div>
+
+<p class="foot">Play money only. Chips come from time at your desk and finished tasks, and nothing here touches real cash. Progress saves automatically.</p>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
