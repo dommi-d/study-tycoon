@@ -35,14 +35,16 @@ const R={phase:'idle',wave:0,lives:TDLIVES,q:[],en:[],pr:[],fx:[],spawnT:0,speed
 function tdPos(d){d=Math.max(0,Math.min(TDTOT,d));let i=1;while(i<TDLEN.length-1&&TDLEN[i]<d)i++;const a=TDP[i-1],b=TDP[i],f=(d-TDLEN[i-1])/(TDLEN[i]-TDLEN[i-1]);return[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f]}
 function tdPathDist(x,y){let m=1e9;for(let i=1;i<TDP.length;i++){const a=TDP[i-1],b=TDP[i],dx=b[0]-a[0],dy=b[1]-a[1];let f=((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy);f=Math.max(0,Math.min(1,f));m=Math.min(m,Math.hypot(x-a[0]-dx*f,y-a[1]-dy*f))}return m}
 function tdGen(r,w){
-  const n=8+3*w+7*(r-1),tm=Math.min(6,1+Math.floor((w+4*(r-1))/2)),gap=Math.max(.25,.85-.04*w-.06*r),q=[];let t=0;
+  const n=8+3*w+(r-1)*(10+2*r),tm=Math.min(6,1+Math.floor((w+4*(r-1))/2)),gap=Math.max(.16,.85-.04*w-.07*r),q=[];let t=0;
   for(let i=0;i<n;i++){const x=Math.random();const tr=x<.5?Math.max(1,tm-1):x<.8?Math.max(1,tm-2):tm;q.push({t,tier:Math.max(1,tr)});t+=gap*(.7+Math.random()*.6)}
+  if(r>=2&&w===5)q.push({t:t/2,boss:1,mini:1});
   if(w===TDWAVES)q.push({t:t+2,boss:1});
+  q.sort((a,b)=>a.t-b.t);
   return q;
 }
 function tdSpawn(o,d){
   const e={id:R.nid++,d:d||0,tier:o.tier||1,boss:!!o.boss,slow:1,slowT:0,dead:false,x:0,y:0};
-  if(e.boss){const r=S.td.round;e.hp=e.max=70+60*(r-1);e.tier=7}
+  if(e.boss){const r=S.td.round;e.hp=e.max=Math.round((70+60*(r-1))*(o.mini?.5:1));e.tier=7}
   const p=tdPos(e.d);e.x=p[0];e.y=p[1];R.en.push(e);return e;
 }
 const tdSp=e=>e.boss?34:TDSPD[e.tier];
@@ -124,6 +126,7 @@ function tdStep(dt){
   }
 }
 /* ---- end of simulation core ---- */
+const tdFee=r=>50+50*r;
 const tdPrize=r=>250+150*r,tdSolar=r=>r%5===0;
 const tdVal=t=>t.val!=null?t.val:(t.sp||0);
 const tdTowerVal=()=>S.td.towers.reduce((a,t)=>a+tdVal(t),0);
@@ -234,7 +237,11 @@ function tdStart(){
   if(R.phase==='wave')return;
   const td=S.td;
   if(!td.towers.length){toast('Place at least one tower first');return}
-  if(R.wave===0){td.live=true;R.lives=TDLIVES;flush()}
+  if(!td.live){
+    const fee=tdFee(td.round);
+    if(Math.floor(S.chips)<fee){toast('Starting round '+td.round+' costs '+fee+' chips');return}
+    spend(fee,'td');td.live=true;R.lives=TDLIVES;R.wave=0;flush()
+  }
   R.paused=false;R.why='';R.phase='wave';R.q=tdGen(td.round,R.wave+1);R.spawnT=0;R.msg='';R.autoT=0;R.dry=false;tdSave();flush();tdRender();
 }
 function tdForfeit(){
@@ -273,7 +280,7 @@ function tdRender(){
       (td.live?'<span class="mute">Selling is locked during a round</span>':'<button class="btn sm" data-td-sell="1">Sell for '+fmt(t.sp*.6)+'</button>')+'</div>';
   }else{box.hidden=true;box.innerHTML=''}
   const go=$('#tdGo');
-  go.textContent=R.phase==='wave'?'Wave '+(R.wave+1)+' running...':(R.wave===0?'Start round '+td.round:'Send wave '+(R.wave+1));
+  go.textContent=R.phase==='wave'?'Wave '+(R.wave+1)+' running...':(td.live?'Send wave '+(R.wave+1):'Start round '+td.round+' \u00b7 '+fmt(tdFee(td.round))+' chips');
   go.disabled=R.phase==='wave';
   const pb=$('#tdPause');pb.hidden=R.phase!=='wave';pb.textContent=R.paused?'\u25B6 Resume':'\u23F8 Pause';tdHudS='';
   $('#tdSpeed').textContent='Speed x'+R.speed;
@@ -285,14 +292,14 @@ function tdRender(){
 let tdHudS='';
 function tdHud(){
   const td=S.td,spent=td.spent||0,tw=tdSolar(td.round)?tdTowerVal():0,pr=tdPrize(td.round),pot=pr+spent+tw,wv=Math.min(TDWAVES,R.wave+(R.phase==='wave'?1:0));
-  const key=[td.round,wv,R.lives,td.ammo,Math.floor(S.chips)>=TDAMMO[0][1],pot,R.phase,R.paused].join('|');
+  const key=[td.round,wv,R.lives,td.ammo,Math.floor(S.chips)>=TDAMMO[0][1],pot,R.phase,R.paused,td.live].join('|');
   if(key===tdHudS)return;tdHudS=key;
   const solar=tdSolar(td.round),nextSolar=Math.ceil(td.round/5)*5;
   $('#tdStats').innerHTML=
     '<div class="tdt life"><span class="k">\u2764\uFE0F Lives</span><span class="v">'+R.lives+'</span>'+(R.phase==='wave'?'<button class="buy" data-td-pause="1">'+(R.paused?'\u25B6 Resume':'\u23F8 Pause')+'</button>':'')+'<div class="tb"><i style="width:'+Math.round(R.lives/TDLIVES*100)+'%"></i></div></div>'+
     '<div class="tdt ammo'+(td.ammo<30?' low':'')+'"><span class="k">\uD83C\uDF30 Ammo</span><span class="v">'+fmt(td.ammo)+'</span><span class="s">'+(td.ammo<30?'Running low!':'Every shot uses ammo')+'</span><button class="buy" data-td-ammo="0">+'+TDAMMO[0][0]+' for '+TDAMMO[0][1]+'</button></div>'+
     '<div class="tdt prize'+(solar?' solar':'')+'"><span class="k">\uD83E\uDE99 Winning pot'+(solar?' \u00b7 \u2600 Solar':'')+'</span><span class="v">'+fmt(pot)+'</span><span class="s">Prize '+fmt(pr)+' + '+fmt(spent)+' spent'+(solar?' + '+fmt(tw)+' towers':'')+(solar?'':' \u00b7 solar round at '+nextSolar)+'</span></div>'+
-    '<div class="tdt wave"><span class="k">\uD83C\uDF0A Round '+td.round+'</span><span class="v">'+wv+'<small style="font-size:18px">/'+TDWAVES+'</small></span><div class="tb"><i style="width:'+Math.round(wv/TDWAVES*100)+'%;background:linear-gradient(90deg,#4cc3ff,#b5ecff)"></i></div></div>';
+    '<div class="tdt wave"><span class="k">\uD83C\uDF0A Round '+td.round+'</span><span class="v">'+wv+'<small style="font-size:18px">/'+TDWAVES+'</small></span>'+(td.live?'':'<span class="s">Entry fee '+fmt(tdFee(td.round))+'</span>')+'<div class="tb"><i style="width:'+Math.round(wv/TDWAVES*100)+'%;background:linear-gradient(90deg,#4cc3ff,#b5ecff)"></i></div></div>';
   document.querySelectorAll('[data-td-ammo]').forEach(b=>{b.disabled=Math.floor(S.chips)<TDAMMO[+b.dataset.tdAmmo][1]});
 }
 let tdLast=0;
