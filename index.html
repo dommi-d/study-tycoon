@@ -269,10 +269,11 @@ button.pc:hover:not(:disabled){transform:translateY(-4px) rotateX(4deg)}
         <li><b>Buy ammo.</b> Every shot uses ammo (shown on each tower card) and ammo costs chips. No ammo, no shooting.</li>
         <li><b>Send waves.</b> Pop a blob and it shrinks a size, so big ones take several hits. Wave 10 brings an airship that splits into blobs.</li>
         <li><b>Win</b> all 10 waves and you get a chip prize, and keep your towers and ammo for the harder next round. <b>Lose</b> and every tower and every bit of ammo is gone. Closing the page mid-round counts as a loss.</li>
+        <li><b>Need more chips?</b> Press Pause during a wave (the game freezes, and it also waits between waves). Start the timer at the top and study, then buy towers, upgrades and ammo with what you earn and press Resume. Switching to another tab also pauses it.</li>
       </ol>
     </details>
     <canvas id="tdCv" style="width:100%;aspect-ratio:640/400;display:block;border-radius:18px;border:3px solid #ffc21a;touch-action:manipulation;background:#2c9"></canvas>
-    <div class="row" style="margin:12px 0"><button id="tdGo" data-td-go="1" class="btn primary">Start round</button><button id="tdSpeed" data-td-speed="1" class="btn sm">Speed x1</button><button id="tdAuto" data-td-auto="1" class="btn sm">Auto-send: off</button><button id="tdForfeit" data-td-ff="1" class="btn sm stop" hidden>Give up</button></div>
+    <div class="row" style="margin:12px 0"><button id="tdGo" data-td-go="1" class="btn primary">Start round</button><button id="tdPause" data-td-pause="1" class="btn sm" hidden>Pause</button><button id="tdSpeed" data-td-speed="1" class="btn sm">Speed x1</button><button id="tdAuto" data-td-auto="1" class="btn sm">Auto-send: off</button><button id="tdForfeit" data-td-ff="1" class="btn sm stop" hidden>Give up</button></div>
     <div class="msg" id="tdMsg"></div>
     <div id="tdSel" class="how" hidden></div>
     <h3 style="margin:14px 0 8px">Towers</h3>
@@ -608,7 +609,7 @@ const tdDesc=t=>{const s=tdStat(t);
     case'sniper':return'dmg '+s.dmg+' · every '+s.cd.toFixed(1)+'s · whole map';
     default:return'chains '+s.n+' targets · dmg '+s.dmg+' · range '+s.rng;
   }};
-const R={phase:'idle',wave:0,lives:TDLIVES,q:[],en:[],pr:[],fx:[],spawnT:0,speed:1,auto:false,sel:null,place:null,autoT:0,nid:1,dry:false,msg:''};
+const R={phase:'idle',wave:0,lives:TDLIVES,q:[],en:[],pr:[],fx:[],spawnT:0,speed:1,auto:false,sel:null,place:null,autoT:0,paused:false,nid:1,dry:false,msg:''};
 function tdPos(d){d=Math.max(0,Math.min(TDTOT,d));let i=1;while(i<TDLEN.length-1&&TDLEN[i]<d)i++;const a=TDP[i-1],b=TDP[i],f=(d-TDLEN[i-1])/(TDLEN[i]-TDLEN[i-1]);return[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f]}
 function tdPathDist(x,y){let m=1e9;for(let i=1;i<TDP.length;i++){const a=TDP[i-1],b=TDP[i],dx=b[0]-a[0],dy=b[1]-a[1];let f=((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy);f=Math.max(0,Math.min(1,f));m=Math.min(m,Math.hypot(x-a[0]-dx*f,y-a[1]-dy*f))}return m}
 function tdGen(r,w){
@@ -704,7 +705,7 @@ function tdStep(dt){
 function tdWaveDone(){R.msg='Wave '+R.wave+' cleared.';tdRender();if(R.auto)R.autoT=1.4}
 function tdEnd(win){
   const td=S.td,r=td.round;
-  R.phase='idle';R.q=[];R.en=[];R.pr=[];R.wave=0;R.lives=TDLIVES;R.autoT=0;R.sel=null;R.place=null;
+  R.paused=false;R.phase='idle';R.q=[];R.en=[];R.pr=[];R.wave=0;R.lives=TDLIVES;R.autoT=0;R.sel=null;R.place=null;
   if(win){
     const prize=200+120*r;td.live=false;td.round=r+1;td.wins=(td.wins||0)+1;payout(prize);
     R.msg='Round '+r+' won! +'+fmt(prize)+' chips. Your towers and leftover ammo carry on to round '+td.round+'.';
@@ -772,7 +773,8 @@ function tdDraw(){
     else if(f.k==='pop'){c.strokeStyle=f.c;c.lineWidth=2;c.beginPath();c.arc(f.x,f.y,6+(.25-f.t)*40,0,6.3);c.stroke()}
     else if(f.k==='leak'){c.fillStyle='rgba(255,60,40,'+f.t+')';c.fillRect(TDW-24,0,24,TDH)}
   }
-  if(R.phase==='wave'&&S.td.ammo<=0){c.fillStyle='rgba(120,0,0,.65)';c.fillRect(0,0,TDW,34);c.fillStyle='#fff';c.font='bold 18px sans-serif';c.textAlign='center';c.fillText('Out of ammo! Buy more below.',TDW/2,23);c.textAlign='left'}
+  if(R.paused){c.fillStyle='rgba(3,34,54,.7)';c.fillRect(0,0,TDW,TDH);c.fillStyle='#ffe066';c.font='bold 30px sans-serif';c.textAlign='center';c.fillText('Paused',TDW/2,TDH/2-8);c.font='16px sans-serif';c.fillStyle='#fff';c.fillText('Study to earn chips, then spend them and press Resume',TDW/2,TDH/2+22);c.textAlign='left'}
+  else if(R.phase==='wave'&&S.td.ammo<=0){c.fillStyle='rgba(120,0,0,.65)';c.fillRect(0,0,TDW,34);c.fillStyle='#fff';c.font='bold 18px sans-serif';c.textAlign='center';c.fillText('Out of ammo! Buy more below.',TDW/2,23);c.textAlign='left'}
 }
 function tdCanPlace(x,y){
   if(x<16||y<16||x>TDW-16||y>TDH-16)return false;
@@ -802,7 +804,7 @@ function tdStart(){
   const td=S.td;
   if(!td.towers.length){toast('Place at least one tower first');return}
   if(R.wave===0){td.live=true;R.lives=TDLIVES;flush()}
-  R.phase='wave';R.q=tdGen(td.round,R.wave+1);R.spawnT=0;R.msg='';R.autoT=0;R.dry=false;tdRender();
+  R.paused=false;R.phase='wave';R.q=tdGen(td.round,R.wave+1);R.spawnT=0;R.msg='';R.autoT=0;R.dry=false;tdRender();
 }
 function tdForfeit(){
   if(!S.td.live)return;
@@ -821,6 +823,7 @@ $('#p-td').addEventListener('click',e=>{
   }
   else if(d.tdTg){const t=S.td.towers.find(z=>z.id===R.sel);if(!t)return;t.tg=t.tg==='first'?'strong':t.tg==='strong'?'last':'first';touch();tdRender()}
   else if(d.tdGo)tdStart();
+  else if(d.tdPause){if(R.phase==='wave'){R.paused=!R.paused;tdRender()}}
   else if(d.tdSpeed){R.speed=R.speed>=3?1:R.speed+1;tdRender()}
   else if(d.tdAuto){R.auto=!R.auto;if(R.auto&&R.phase==='idle'&&R.wave>0)R.autoT=.8;tdRender()}
   else if(d.tdFf)tdForfeit();
@@ -841,6 +844,7 @@ function tdRender(){
   const go=$('#tdGo');
   go.textContent=R.phase==='wave'?'Wave '+(R.wave+1)+' running...':(R.wave===0?'Start round '+td.round:'Send wave '+(R.wave+1));
   go.disabled=R.phase==='wave';
+  const pb=$('#tdPause');pb.hidden=R.phase!=='wave';pb.textContent=R.paused?'Resume':'Pause';
   $('#tdSpeed').textContent='Speed x'+R.speed;
   $('#tdAuto').textContent='Auto-send: '+(R.auto?'on':'off');
   const ff=$('#tdForfeit');ff.hidden=!td.live;if(!R._ff)ff.textContent='Give up';
@@ -860,7 +864,7 @@ function tdLoop(ts){
   const dt=Math.min(.05,(ts-tdLast)/1000||0);tdLast=ts;
   const pane=document.getElementById('p-td');
   if(!pane||pane.hidden||document.hidden||!S.td)return;
-  if(R.phase==='wave'){const n=Math.max(1,Math.ceil(dt*R.speed/.033)),h=dt*R.speed/n;for(let i=0;i<n;i++)if(R.phase==='wave')tdStep(h)}
+  if(R.phase==='wave'&&!R.paused){const n=Math.max(1,Math.ceil(dt*R.speed/.033)),h=dt*R.speed/n;for(let i=0;i<n;i++)if(R.phase==='wave')tdStep(h)}
   else if(R.autoT>0){R.autoT-=dt;if(R.autoT<=0&&R.auto)tdStart()}
   tdDraw();tdHud();
 }
