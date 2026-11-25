@@ -79,6 +79,21 @@ ul.tasks{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
 .tdcard b{font:400 17px var(--disp);color:var(--c)}.tdcard em{font-style:normal;font-size:12px;color:#ffe066}.tdcard small{font-size:12px;opacity:.85}
 .tdcard.on{background:rgba(255,255,255,.2);box-shadow:0 0 0 3px #fff}
 .td-shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.tdframe{border:3px solid #ffc21a;border-radius:22px;overflow:hidden;box-shadow:0 6px 0 rgba(0,0,0,.3);background:#0b3550}
+.tdhud{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px;background:#ffc21a}
+.tdt{background:linear-gradient(180deg,#0e4a63,#082f48);color:#fff;padding:10px 14px;display:grid;gap:2px;position:relative;min-width:0}
+.tdt .k{font:800 11px var(--body,inherit);letter-spacing:.1em;text-transform:uppercase;color:#bfe9ff;display:flex;align-items:center;gap:6px}
+.tdt .v{font:400 40px/1 var(--disp);font-variant-numeric:tabular-nums;text-shadow:0 3px 0 rgba(0,0,0,.35)}
+.tdt .s{font-size:12px;color:#c9f5e6}
+.tdt .tb{height:7px;border-radius:9px;background:rgba(255,255,255,.18);overflow:hidden;margin-top:3px}.tdt .tb i{display:block;height:100%;border-radius:9px}
+.tdt.life .v{color:#ff8fa3}.tdt.life .tb i{background:linear-gradient(90deg,#ff5a7a,#ff9ab0)}
+.tdt.ammo .v{color:#ffe066}.tdt.ammo .tb i{background:linear-gradient(90deg,#ffc21a,#fff0a0)}
+.tdt.ammo.low .v{color:#ff7a66;animation:tdlow 1s infinite}
+.tdt.prize .v{color:#6df3c0}.tdt.prize.solar{background:linear-gradient(180deg,#8a4b00,#4d2a00)}.tdt.prize.solar .v{color:#ffd23f}
+.tdt.wave .v{color:#9fe8ff}
+.tdt .buy{position:absolute;right:10px;top:10px;font:400 13px var(--disp);padding:4px 10px;border-radius:10px;border:2px solid #fff3a0;background:linear-gradient(180deg,#ffe066,#ffab1f);color:#3a2400;cursor:pointer;box-shadow:0 3px 0 #a56a00}
+.tdt .buy:disabled{opacity:.45;cursor:not-allowed}
+@keyframes tdlow{50%{opacity:.55}}
 [hidden]{display:none!important}
 .ch-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:12px}
 .chlv{--c:#5be68a;--c2:#1fae5a;--tc:#022b14;text-align:left;display:grid;gap:6px;padding:18px;border-radius:22px;border:3px solid rgba(0,0,0,.25);background:linear-gradient(165deg,var(--c),var(--c2));color:var(--tc);cursor:pointer;box-shadow:0 7px 0 rgba(0,0,0,.3);transition:transform .08s,box-shadow .08s;font:400 15px var(--body,inherit)}
@@ -274,7 +289,7 @@ button.pc:hover:not(:disabled){transform:translateY(-4px) rotateX(4deg)}
     <div class="mk-grid" id="mkGrid"></div>
   </section>
   <section id="p-td" hidden>
-    <div class="row sp"><h2>Sun Guard &middot; tower defense</h2><span class="mono" id="tdStats" style="font-size:14px"></span></div>
+    <div class="row sp"><h2>Sun Guard &middot; tower defense</h2></div>
     <details class="how" open>
       <summary>How to play (tap to hide)</summary>
       <p style="margin:8px 0 0">Smog blobs roll along the gold road. Stop them before they reach the right edge. Each one that gets through costs lives equal to its size, and you start every round with 40.</p>
@@ -286,7 +301,10 @@ button.pc:hover:not(:disabled){transform:translateY(-4px) rotateX(4deg)}
         <li><b>Need more chips?</b> Press Pause during a wave (the game freezes, and it also waits between waves). Start the timer at the top and study, then buy towers, upgrades and ammo with what you earn and press Resume. Switching to another tab also pauses it.</li>
       </ol>
     </details>
-    <canvas id="tdCv" style="width:100%;aspect-ratio:640/400;display:block;border-radius:18px;border:3px solid #ffc21a;touch-action:manipulation;background:#2c9"></canvas>
+    <div class="tdframe">
+      <div id="tdStats" class="tdhud"></div>
+      <canvas id="tdCv" style="width:100%;aspect-ratio:640/400;display:block;touch-action:manipulation;background:#2c9"></canvas>
+    </div>
     <div class="row" style="margin:12px 0"><button id="tdGo" data-td-go="1" class="btn primary">Start round</button><button id="tdPause" data-td-pause="1" class="btn sm" hidden>Pause</button><button id="tdSpeed" data-td-speed="1" class="btn sm">Speed x1</button><button id="tdAuto" data-td-auto="1" class="btn sm">Auto-send: off</button><button id="tdForfeit" data-td-ff="1" class="btn sm stop" hidden>Give up</button></div>
     <div class="msg" id="tdMsg"></div>
     <div id="tdSel" class="how" hidden></div>
@@ -904,9 +922,15 @@ function tdRender(){
 }
 let tdHudS='';
 function tdHud(){
-  const td=S.td,s='R'+td.round+'|'+(R.wave+(R.phase==='wave'?1:0))+'|'+R.lives+'|'+td.ammo+'|'+Math.floor(S.chips)+'|'+td.towers.reduce((a,t)=>a+(t.sp||0),0);
-  if(s===tdHudS)return;tdHudS=s;
-  $('#tdStats').innerHTML='Round <b>'+td.round+'</b> &middot; Wave <b>'+Math.min(TDWAVES,R.wave+(R.phase==='wave'?1:0))+'/'+TDWAVES+'</b> &middot; Lives <b>'+R.lives+'</b> &middot; Ammo <b style="color:'+(td.ammo<30?'#ff9a8a':'#ffe066')+'">'+fmt(td.ammo)+'</b> &middot; Round prize <b style="color:#ffe066">'+fmt(tdPrize(td.round))+'</b>'+(tdSolar(td.round)?' &middot; <b style="color:#ffb347">SOLAR-PRIZE ROUND: +'+fmt(td.towers.reduce((a,t)=>a+(t.sp||0),0))+' for your towers</b>':' &middot; <span class="mute">solar-prize round at round '+(Math.ceil(td.round/5)*5)+'</span>');
+  const td=S.td,val=td.towers.reduce((a,t)=>a+(t.sp||0),0),wv=Math.min(TDWAVES,R.wave+(R.phase==='wave'?1:0));
+  const key=[td.round,wv,R.lives,td.ammo,Math.floor(S.chips)>=TDAMMO[0][1],val].join('|');
+  if(key===tdHudS)return;tdHudS=key;
+  const solar=tdSolar(td.round),nextSolar=Math.ceil(td.round/5)*5;
+  $('#tdStats').innerHTML=
+    '<div class="tdt life"><span class="k">\u2764\uFE0F Lives</span><span class="v">'+R.lives+'</span><div class="tb"><i style="width:'+Math.round(R.lives/TDLIVES*100)+'%"></i></div></div>'+
+    '<div class="tdt ammo'+(td.ammo<30?' low':'')+'"><span class="k">\uD83C\uDF30 Ammo</span><span class="v">'+fmt(td.ammo)+'</span><span class="s">'+(td.ammo<30?'Running low!':'Every shot uses ammo')+'</span><button class="buy" data-td-ammo="0">+'+TDAMMO[0][0]+' for '+TDAMMO[0][1]+'</button></div>'+
+    '<div class="tdt prize'+(solar?' solar':'')+'"><span class="k">\uD83E\uDE99 Round prize'+(solar?' \u00b7 \u2600 Solar':'')+'</span><span class="v">'+fmt(tdPrize(td.round))+(solar?'<small style="font-size:18px"> +'+fmt(val)+'</small>':'')+'</span><span class="s">'+(solar?'Solar-prize round: towers on your map are paid back too':'Solar-prize round at round '+nextSolar)+'</span></div>'+
+    '<div class="tdt wave"><span class="k">\uD83C\uDF0A Round '+td.round+'</span><span class="v">'+wv+'<small style="font-size:18px">/'+TDWAVES+'</small></span><div class="tb"><i style="width:'+Math.round(wv/TDWAVES*100)+'%;background:linear-gradient(90deg,#4cc3ff,#b5ecff)"></i></div></div>';
   document.querySelectorAll('[data-td-ammo]').forEach(b=>{b.disabled=Math.floor(S.chips)<TDAMMO[+b.dataset.tdAmmo][1]});
 }
 let tdLast=0;

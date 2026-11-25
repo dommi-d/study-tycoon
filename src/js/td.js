@@ -282,9 +282,15 @@ function tdRender(){
 }
 let tdHudS='';
 function tdHud(){
-  const td=S.td,s='R'+td.round+'|'+(R.wave+(R.phase==='wave'?1:0))+'|'+R.lives+'|'+td.ammo+'|'+Math.floor(S.chips)+'|'+td.towers.reduce((a,t)=>a+(t.sp||0),0);
-  if(s===tdHudS)return;tdHudS=s;
-  $('#tdStats').innerHTML='Round <b>'+td.round+'</b> &middot; Wave <b>'+Math.min(TDWAVES,R.wave+(R.phase==='wave'?1:0))+'/'+TDWAVES+'</b> &middot; Lives <b>'+R.lives+'</b> &middot; Ammo <b style="color:'+(td.ammo<30?'#ff9a8a':'#ffe066')+'">'+fmt(td.ammo)+'</b> &middot; Round prize <b style="color:#ffe066">'+fmt(tdPrize(td.round))+'</b>'+(tdSolar(td.round)?' &middot; <b style="color:#ffb347">SOLAR-PRIZE ROUND: +'+fmt(td.towers.reduce((a,t)=>a+(t.sp||0),0))+' for your towers</b>':' &middot; <span class="mute">solar-prize round at round '+(Math.ceil(td.round/5)*5)+'</span>');
+  const td=S.td,val=td.towers.reduce((a,t)=>a+(t.sp||0),0),wv=Math.min(TDWAVES,R.wave+(R.phase==='wave'?1:0));
+  const key=[td.round,wv,R.lives,td.ammo,Math.floor(S.chips)>=TDAMMO[0][1],val].join('|');
+  if(key===tdHudS)return;tdHudS=key;
+  const solar=tdSolar(td.round),nextSolar=Math.ceil(td.round/5)*5;
+  $('#tdStats').innerHTML=
+    '<div class="tdt life"><span class="k">\u2764\uFE0F Lives</span><span class="v">'+R.lives+'</span><div class="tb"><i style="width:'+Math.round(R.lives/TDLIVES*100)+'%"></i></div></div>'+
+    '<div class="tdt ammo'+(td.ammo<30?' low':'')+'"><span class="k">\uD83C\uDF30 Ammo</span><span class="v">'+fmt(td.ammo)+'</span><span class="s">'+(td.ammo<30?'Running low!':'Every shot uses ammo')+'</span><button class="buy" data-td-ammo="0">+'+TDAMMO[0][0]+' for '+TDAMMO[0][1]+'</button></div>'+
+    '<div class="tdt prize'+(solar?' solar':'')+'"><span class="k">\uD83E\uDE99 Round prize'+(solar?' \u00b7 \u2600 Solar':'')+'</span><span class="v">'+fmt(tdPrize(td.round))+(solar?'<small style="font-size:18px"> +'+fmt(val)+'</small>':'')+'</span><span class="s">'+(solar?'Solar-prize round: towers on your map are paid back too':'Solar-prize round at round '+nextSolar)+'</span></div>'+
+    '<div class="tdt wave"><span class="k">\uD83C\uDF0A Round '+td.round+'</span><span class="v">'+wv+'<small style="font-size:18px">/'+TDWAVES+'</small></span><div class="tb"><i style="width:'+Math.round(wv/TDWAVES*100)+'%;background:linear-gradient(90deg,#4cc3ff,#b5ecff)"></i></div></div>';
   document.querySelectorAll('[data-td-ammo]').forEach(b=>{b.disabled=Math.floor(S.chips)<TDAMMO[+b.dataset.tdAmmo][1]});
 }
 let tdLast=0;
