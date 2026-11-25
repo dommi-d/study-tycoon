@@ -3,7 +3,7 @@ const fmt=n=>Math.floor(n).toLocaleString('en-US');
 const ds=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const today=()=>ds(new Date());
 const yesterday=()=>ds(new Date(Date.now()-864e5));
-const DEF=()=>({chips:100,earned:0,secs:0,since:0,day:today(),todaySecs:0,goal:120,streak:0,lastGoalDay:'',tasks:[],own:{},bj:{w:0,l:0},mk:[],pos:[],td:{round:1,ammo:0,spent:0,towers:[],live:false,wins:0,losses:0},chess:{g:null,live:false,paid:0,wins:0,lv:0,msg:""},st:{by:{},back:{}},savedAt:0});
+const DEF=()=>({chips:100,earned:0,secs:0,since:0,day:today(),todaySecs:0,goal:120,streak:0,lastGoalDay:'',tasks:[],own:{},bj:{w:0,l:0},mk:[],pos:[],td:{round:1,ammo:0,spent:0,towers:[],live:false,wins:0,losses:0},chess:{g:null,live:false,paid:0,wins:0,lv:0,msg:""},st:{by:{},back:{}},lastSess:0,savedAt:0});
 let S=DEF(),dirty=false;
 const touch=()=>{dirty=true};
 let tt;
@@ -39,6 +39,19 @@ const level=()=>Math.min(RANKS.length,1+Math.floor(Math.sqrt(S.secs/3600*2)));
 let run=false,last=0,sess=0;
 function mult(){if(!run)return 1;return sess<1500?1:sess<3000?1.25:sess<5400?1.5:2}
 const BASE=10; /* chips per minute of focus */
+/* beating the immediately previous session pays a bonus that grows with how much longer this one is */
+function recBonus(){
+  const L=S.lastSess||0;if(!run||L<=0||sess<=L)return 0;
+  const ex=sess-L,r=Math.min(5,ex/Math.max(L,60));
+  return Math.round(BASE*(ex/60)*(.5+r));
+}
+function recUpdate(){
+  const n=$('#recNote'),L=S.lastSess||0,b=recBonus();
+  if(!run||L<=0){n.textContent=L>0?'Last session: '+fmtT(L)+'. Beat it for a bonus.':'Your first session sets the time to beat.';}
+  else if(b>0)n.innerHTML='Beating your last session ('+fmtT(L)+') by <b>'+fmtT(sess-L)+'</b>: bonus <b style="color:#ffe066">+'+fmt(b)+'</b> and growing.';
+  else n.textContent='Last session: '+fmtT(L)+'. '+fmtT(L-sess)+' to go before the bonus starts.';
+  if(!$('#recAsk').hidden){if(b>0)$('#recAskT').textContent='You are '+fmtT(sess-L)+' past your last session ('+fmtT(L)+'). Cash out +'+fmt(b)+' chips now and stop, or keep studying? The longer you go, the faster the bonus grows.';else $('#recAsk').hidden=true}
+}
 function tick(){
   if(!run)return;
   const now=Date.now();let d=Math.min((now-last)/1000,90);last=now;
@@ -64,13 +77,24 @@ function renderDesk(){
   $('#sToday').textContent=dur(S.todaySecs);$('#sAll').textContent=dur(S.secs);$('#sStreak').textContent=streakNow();
   const b=$('#startBtn');b.textContent=run?'Stop session':'Start working';b.className='btn '+(run?'stop':'primary');
   if(window.World)World.setRun(run);
+  recUpdate();
   const lv=level();$('#rank').textContent='Rank '+lv+' · '+RANKS[lv-1];
   $('#taskNote').textContent=S.since>=300?'Next finished task pays '+taskPay()+' chips'+(tyCount()?' (tycoon bonus x'+tyBonus().toFixed(1)+').':'.'):'Work '+Math.ceil((300-S.since)/60)+' more min before the next finished task pays.';
 }
 $('#startBtn').onclick=()=>{
-  if(run){run=false;toast('Session over: '+dur(sess)+' logged');touch()}
+  if(run){
+    const b=recBonus();
+    if(b>0){$('#recAsk').hidden=false;recUpdate();return}
+    run=false;S.lastSess=Math.floor(sess);toast('Session over: '+dur(sess)+' logged');touch();$('#recAsk').hidden=true
+  }
   else{run=true;last=Date.now();sess=0;toast('Clock is running. Chips are accruing.')}
   renderDesk();
+};
+$('#recKeep').onclick=()=>{$('#recAsk').hidden=true};
+$('#recCash').onclick=()=>{
+  const b=recBonus();$('#recAsk').hidden=true;if(!run)return;
+  run=false;if(b>0)earn(b,true);S.lastSess=Math.floor(sess);touch();flush();
+  toast('Session over: '+dur(sess)+' logged'+(b>0?'. Record bonus +'+fmt(b)+' chips':''));renderDesk();
 };
 $('#goalIn').onchange=e=>{S.goal=Math.max(10,Math.min(900,Math.floor(+e.target.value)||120));e.target.value=S.goal;touch();renderDesk()};
 
@@ -145,7 +169,7 @@ function flush(){if(!dirty)return;localSave();if(saving)return;dirty=false;cloud
 setInterval(flush,6000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
 window.addEventListener('pagehide',flush);
-const adopt=o=>{S=Object.assign(DEF(),o);if(!S.bj)S.bj={w:0,l:0};if(!S.td)S.td=DEF().td;if(!S.chess)S.chess=DEF().chess;if(!S.st)S.st={by:{},back:{}}};
+const adopt=o=>{S=Object.assign(DEF(),o);if(!S.bj)S.bj={w:0,l:0};if(!S.td)S.td=DEF().td;if(!S.chess)S.chess=DEF().chess;if(!S.st)S.st={by:{},back:{}};if(!S.lastSess)S.lastSess=0};
 function renderAll(){renderBal();renderDesk();renderTasks();renderTycoon();$('#goalIn').value=S.goal;renderMk();renderPos();if(typeof tdRender==='function')tdRender();if(typeof chRender==='function')chRender()}
 async function boot(){
   let local=null;try{local=JSON.parse(localStorage.getItem('studystakes'))}catch(e){}
