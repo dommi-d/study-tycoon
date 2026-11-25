@@ -115,10 +115,8 @@ function chPick(g,lv){
   return best;
 }
 /* ---- screen ---- */
-let chSel=-1,chBusy=false;
+let chSel=-1,chBusy=false,chPicking=false;
 function chInit(){
-  const sel=$('#chLv');sel.innerHTML=CHLV.map((l,i)=>'<option value="'+i+'">'+l.n+': '+l.buy+' buy-in + '+l.fee+'/move, wins '+l.prize.toLocaleString('en-US')+'</option>').join('');
-  sel.value=S.chess.lv||0;
   const ch=S.chess;
   if(ch.live&&ch.g){
     /* a game in progress is restored; if the page closed while the house was thinking, it plays its move now */
@@ -132,12 +130,18 @@ function chFee(){return CHLV[S.chess.lv||0].fee}
 function chRender(){
   const ch=S.chess;if(!ch)return;
   const g=ch.g,bd=$('#chBoard');
-  const sel=$('#chLv');if(sel&&!ch.live)sel.disabled=false;if(sel&&ch.live)sel.disabled=true;
-  $('#chRes').hidden=!ch.live;
-  $('#chNew').textContent=ch.live?'Restart (forfeit)':'New game';
-  $('#chStats').innerHTML=(ch.live?'Paid so far <b>'+fmt(ch.paid)+'</b> &middot; ':'')+'Buy-in <b>'+CHLV[ch.lv||0].buy+'</b> &middot; Move fee <b>'+chFee()+'</b> &middot; Win pays <b>'+fmt(chPrize())+'</b> &middot; Wins <b>'+(ch.wins||0)+'</b>';
-  $('#chMsg').textContent=ch.msg||(g?'':'Press New game to start. You are White.');
-  if(!g){bd.innerHTML='';return}
+  /* difficulty buttons until a game is chosen; then the board takes their place */
+  const picking=!ch.live&&(!g||chPicking);
+  $('#chPick').hidden=!picking;$('#chPlay').hidden=picking;
+  if(picking){
+    const icons=['\uD83C\uDF31','\uD83C\uDF3B','\uD83D\uDD25'];
+    $('#chPick').innerHTML=CHLV.map((l,i)=>{const ok=Math.floor(S.chips)>=l.buy+l.fee;return'<button class="chlv l'+i+'" data-lv="'+i+'"'+(ok?'':' disabled')+'><span class="chi">'+icons[i]+'</span><b>'+l.n.split(' (')[0]+'</b><em>'+l.n.split('(')[1].replace(')','').toUpperCase()+' OPPONENT</em><span>Buy-in <b style="font-size:19px">'+l.buy+'</b></span><span>Each move <b style="font-size:19px">'+l.fee+'</b></span><span>Win prize <b style="font-size:19px">'+l.prize.toLocaleString('en-US')+'</b></span><span class="go">'+(ok?'Play':'Need '+fmt(l.buy+l.fee-Math.floor(S.chips))+' more chips')+'</span></button>'}).join('');
+  }
+  $('#chRes').hidden=!ch.live;$('#chAgain').hidden=ch.live;
+  if(!ch._rc)$('#chRes').textContent='Resign';
+  $('#chStats').innerHTML=(ch.live?'Paid so far <b>'+fmt(ch.paid)+'</b> &middot; Move fee <b>'+chFee()+'</b> &middot; Win pays <b>'+fmt(chPrize())+'</b> &middot; ':'')+'Wins <b>'+(ch.wins||0)+'</b>';
+  $('#chMsg').textContent=ch.msg||(picking?'Pick an opponent to start. You play White. The buy-in is charged when you press Play.':'');
+  if(!g||picking){bd.innerHTML='';return}
   const targets={};
   if(chSel>=0&&ch.live&&g.turn==='w')chLegal(g).filter(m=>m.f===chSel).forEach(m=>{targets[m.t]=m.cap?'cap':'mv'});
   let h='';
@@ -189,12 +193,16 @@ $('#chBoard').addEventListener('click',e=>{
   }
   chSel=(p&&p[0]==='w'&&s!==chSel)?s:-1;chRender();
 });
-$('#chNew').addEventListener('click',()=>{
-  const ch=S.chess;if(chBusy)return;
-  if(ch.live&&!ch._conf){ch._conf=1;$('#chNew').textContent='Tap again to forfeit and restart';setTimeout(()=>{ch._conf=0;chRender()},3000);return}
-  ch._conf=0;const nl=+$('#chLv').value,L=CHLV[nl];
+$('#chPick').addEventListener('click',e=>{
+  const b=e.target.closest('[data-lv]');if(!b||chBusy)return;
+  const ch=S.chess,nl=+b.dataset.lv,L=CHLV[nl];
   if(Math.floor(S.chips)<L.buy+L.fee){toast('You need '+(L.buy+L.fee)+' chips: '+L.buy+' buy-in plus your first move ('+L.fee+')');return}
-  spend(L.buy,'ch');ch.lv=nl;ch.g=chNew();ch.live=true;ch.paid=L.buy;ch.fees=0;ch.msg='Buy-in paid ('+L.buy+'). Your move; each move costs '+L.fee+' chips.';chSel=-1;touch();flush();chRender();
+  spend(L.buy,'ch');ch.lv=nl;ch.g=chNew();ch.live=true;ch.paid=L.buy;ch.fees=0;chPicking=false;
+  ch.msg='Buy-in paid ('+L.buy+'). Your move; each move costs '+L.fee+' chips.';chSel=-1;touch();flush();chRender();
 });
-$('#chRes').addEventListener('click',()=>{if(!chBusy&&S.chess.live)chFinish('resign')});
-$('#chLv').addEventListener('change',()=>{if(!S.chess.live){S.chess.lv=+$('#chLv').value;touch();chRender()}});
+$('#chAgain').addEventListener('click',()=>{chPicking=true;S.chess.msg='';chRender()});
+$('#chRes').addEventListener('click',()=>{
+  const ch=S.chess;if(chBusy||!ch.live)return;
+  if(!ch._rc){ch._rc=1;$('#chRes').textContent='Tap again to resign';setTimeout(()=>{ch._rc=0;chRender()},3000);return}
+  ch._rc=0;chFinish('resign');
+});

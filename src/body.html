@@ -151,8 +151,11 @@
       <summary>How this works (tap to hide)</summary>
       <p style="margin:8px 0 0">You play White against the house. <b>Every game has a buy-in</b>, and <b>each move you make costs chips too</b> (at least 50). The easier opponents are the expensive ones to play, and the hardest has the cheapest entry and the biggest prize. The win prize stays fixed until what you have spent on moves passes half of it. After that, every extra move you pay for is added to the prize, so a long game is always paid back if you win. Draw and you get half of everything you paid back, lose and it is all gone. Tap a piece, then tap where it should go. Castling, en passant and promotion (to a queen) all work.</p>
     </details>
-    <div class="row" style="margin-bottom:10px"><label for="chLv" class="mute">Opponent</label><select id="chLv"></select><button id="chNew" class="btn primary">New game</button><button id="chRes" class="btn sm stop" hidden>Resign</button></div>
-    <div id="chBoard" class="chboard"></div>
+    <div id="chPick" class="ch-pick"></div>
+    <div id="chPlay" hidden>
+      <div class="row" style="margin-bottom:10px"><button id="chRes" class="btn sm stop" hidden>Resign</button><button id="chAgain" class="btn primary" hidden>Play again</button></div>
+      <div id="chBoard" class="chboard"></div>
+    </div>
     <div class="msg" id="chMsg"></div>
   </section>
 </div>
