@@ -91,7 +91,7 @@ function renderDesk(){
   if(window.World)World.setRun(run);
   recUpdate();
   const lv=level();$('#rank').textContent='Rank '+lv+' · '+RANKS[lv-1];
-  $('#taskNote').textContent=S.since>=300?'Next finished task pays '+taskPay()+' chips'+(tyCount()?' (tycoon bonus x'+tyBonus().toFixed(1)+').':'.'):'Work '+Math.ceil((300-S.since)/60)+' more min before the next finished task pays.';
+  $('#taskNote').textContent='Each finished task pays '+taskPay()+' chips'+(tyCount()?' (tycoon bonus x'+tyBonus().toFixed(1)+').':'.');
 }
 $('#startBtn').onclick=()=>{
   if(run){
@@ -123,8 +123,7 @@ function renderTasks(){
     const li=document.createElement('li');if(k.done)li.className='done';
     const cb=document.createElement('input');cb.type='checkbox';cb.checked=k.done;cb.disabled=k.done;cb.setAttribute('aria-label','Finish task');
     cb.onchange=()=>{
-      if(S.since<300){toast('Put in 5 minutes of work before this one pays.');cb.checked=false;return}
-      const r=taskPay();S.since=0;k.done=true;earn(r,true);toast('Task done! +'+r+' chips');renderTasks();renderDesk();
+      const r=taskPay();k.done=true;earn(r,true);toast('Task done! +'+r+' chips');renderTasks();renderDesk();
     };
     const sp=document.createElement('span');sp.textContent=k.t;
     const x=document.createElement('button');x.className='btn sm';x.textContent='×';x.setAttribute('aria-label','Remove task');
