@@ -381,7 +381,9 @@ document.addEventListener('click',e=>{
 /* ---------- work timer ---------- */
 const RANKS=['Seedling','Sprout','Gardener','Cultivator','Steward','Grove Keeper','Forest Warden','Canopy Sage','Sunbearer'];
 const level=()=>Math.min(RANKS.length,1+Math.floor(Math.sqrt(S.secs/3600*2)));
-let run=false,last=0,sess=0;
+/* the session is timed against the real clock (runT0 = the moment it started), so a minimized or throttled tab
+   never loses time: every tick credits everything between the last tick and now */
+let run=false,last=0,sess=0,runT0=0;
 function mult(){if(!run)return 1;return sess<1500?1:sess<3000?1.25:sess<5400?1.5:2}
 const BASE=10; /* chips per minute of focus */
 /* beating the immediately previous session pays a bonus that grows with how much longer this one is */
@@ -398,12 +400,21 @@ function recUpdate(){
   else n.textContent='Last session: '+fmtT(L)+'. '+fmtT(L-sess)+' to go before the bonus starts.';
   if(!$('#recAsk').hidden){if(b>0)$('#recAskT').textContent='You are '+fmtT(sess-L)+' past your last session ('+fmtT(L)+'). Cash out +'+fmt(b)+' chips now and stop, or keep studying? The longer you go, the faster the bonus grows.';else $('#recAsk').hidden=true}
 }
+/* chips for the session seconds s0..s1, following the focus-multiplier tiers (x1, x1.25, x1.5, x2) */
+function chipsFor(s0,s1){
+  const T=[0,1500,3000,5400,Infinity],M=[1,1.25,1.5,2];let tot=0;
+  for(let i=0;i<4;i++){const a=Math.max(s0,T[i]),b=Math.min(s1,T[i+1]);if(b>a)tot+=(BASE*M[i]+tyRate())*(b-a)/60}
+  return tot;
+}
 function tick(){
   if(!run)return;
-  const now=Date.now();let d=Math.min((now-last)/1000,90);last=now;
+  const now=Date.now(),s1=(now-runT0)/1000,d=s1-sess;
+  if(d<=0){renderDesk();return}
+  const midnight=new Date(now).setHours(0,0,0,0),dToday=Math.min(d,(now-midnight)/1000);
   if(S.day!==today()){S.day=today();S.todaySecs=0}
-  sess+=d;S.secs+=d;S.todaySecs+=d;S.since+=d;
-  earn((BASE*mult()+tyRate())*d/60,false);
+  const c=chipsFor(sess,s1);
+  sess=s1;last=now;S.runBeat=now;S.secs+=d;S.todaySecs+=dToday;S.since+=d;
+  earn(c,false);
   if(S.todaySecs>=S.goal*60&&S.lastGoalDay!==today()){
     S.streak=S.lastGoalDay===yesterday()?S.streak+1:1;S.lastGoalDay=today();
     const bonus=100+25*S.streak;earn(bonus,true);
@@ -429,17 +440,18 @@ function renderDesk(){
 }
 $('#startBtn').onclick=()=>{
   if(run){
+    tick();/* credit everything up to the real clock before stopping */
     const b=recBonus();
     if(b>0){$('#recAsk').hidden=false;recUpdate();return}
-    run=false;S.lastSess=Math.floor(sess);toast('Session over: '+dur(sess)+' logged');touch();$('#recAsk').hidden=true
+    run=false;S.runT0=null;S.lastSess=Math.floor(sess);toast('Session over: '+dur(sess)+' logged');touch();flush();$('#recAsk').hidden=true
   }
-  else{run=true;last=Date.now();sess=0;toast('Clock is running. Chips are accruing.')}
+  else{run=true;runT0=last=Date.now();sess=0;S.runT0=runT0;S.runBeat=runT0;toast('Clock is running. Chips are accruing.');touch();flush()}
   renderDesk();
 };
 $('#recKeep').onclick=()=>{$('#recAsk').hidden=true};
 $('#recCash').onclick=()=>{
-  const b=recBonus();$('#recAsk').hidden=true;if(!run)return;
-  run=false;if(b>0)earn(b,true);S.lastSess=Math.floor(sess);touch();flush();
+  tick();const b=recBonus();$('#recAsk').hidden=true;if(!run)return;
+  run=false;S.runT0=null;if(b>0)earn(b,true);S.lastSess=Math.floor(sess);touch();flush();
   toast('Session over: '+dur(sess)+' logged'+(b>0?'. Record bonus +'+fmt(b)+' chips':''));renderDesk();
 };
 $('#goalIn').onchange=e=>{S.goal=Math.max(10,Math.min(900,Math.floor(+e.target.value)||120));e.target.value=S.goal;touch();renderDesk()};
@@ -513,8 +525,17 @@ async function cloudSave(){
 }
 function flush(){if(!dirty)return;localSave();if(saving)return;dirty=false;cloudSave()}
 setInterval(flush,6000);
-document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
-window.addEventListener('pagehide',flush);
+document.addEventListener('visibilitychange',()=>{tick();if(document.hidden)flush()});
+window.addEventListener('pagehide',()=>{tick();flush()});
+window.addEventListener('focus',tick);
+/* a session that was running when the page reloaded (an update, say) picks up again if it was only a short gap */
+function timerResume(){
+  if(!S.runT0||!S.runBeat)return;
+  const gap=Date.now()-S.runBeat;
+  if(gap<=5*60000){run=true;runT0=S.runT0;sess=(S.runBeat-runT0)/1000;last=S.runBeat;tick();toast('Welcome back: your session kept running.')}
+  else{const len=Math.floor((S.runBeat-S.runT0)/1000);if(len>0)S.lastSess=len;S.runT0=null;touch()}
+  renderDesk();
+}
 const adopt=o=>{S=Object.assign(DEF(),o);if(!S.bj)S.bj={w:0,l:0};if(!S.td)S.td=DEF().td;if(!S.chess)S.chess=DEF().chess;if(!S.st)S.st={by:{},back:{}};if(!S.lastSess)S.lastSess=0};
 function renderAll(){renderBal();renderDesk();renderTasks();renderTycoon();$('#goalIn').value=S.goal;renderMk();renderPos();if(typeof tdRender==='function')tdRender();if(typeof chRender==='function')chRender()}
 async function boot(){
@@ -1845,7 +1866,7 @@ $('#p-mk').addEventListener('click',e=>{
 $('#mkGrid').insertAdjacentHTML('beforebegin','<div class="row" style="margin:0 0 12px"><label for="mkQty" class="mute">Contracts per trade</label><input id="mkQty" type="number" min="1" value="5" style="width:84px"><span class="mute" style="margin-left:10px">Chart</span><span id="mkRng" class="row" style="gap:6px"></span><span id="posTot" class="mono" style="margin-left:auto;font-size:14px"></span></div>');
 renderRng();
 showTab('tycoon');renderBj();renderVp();
-boot().then(()=>{mkTick();renderPos();tdInit();chInit()});
+boot().then(()=>{mkTick();renderPos();tdInit();chInit();timerResume()});
 setInterval(tick,1000);
 setInterval(mkTick,2000);
 </script>
