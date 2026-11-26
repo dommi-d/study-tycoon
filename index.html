@@ -103,6 +103,26 @@ ul.tasks{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
 .chlv b{font:400 26px/1.1 var(--disp)}.chlv .chi{font-size:40px;line-height:1}.chlv em{font-style:normal;font-weight:800;font-size:13px;opacity:.85}
 .chlv .go{margin-top:4px;font:400 17px var(--disp);background:rgba(255,255,255,.55);border-radius:12px;padding:8px 12px;text-align:center}
 .chlv.l1{--c:#ffc15e;--c2:#ff8a1f;--tc:#3a1c00}.chlv.l2{--c:#ff8fb1;--c2:#d63a7a;--tc:#3a0019}
+.slm{display:grid;gap:12px;justify-items:center;margin:6px 0}
+.slreels{position:relative;display:flex;gap:10px;padding:14px;border-radius:24px;background:linear-gradient(165deg,#ffd23f,#e0891a);border:4px solid #8a4b00;box-shadow:0 8px 0 rgba(0,0,0,.3)}
+.reel{display:grid;grid-template-rows:repeat(3,1fr);width:min(20vw,104px);background:#fff8dc;border-radius:14px;border:3px solid #5a3000;overflow:hidden;box-shadow:inset 0 6px 14px rgba(0,0,0,.25)}
+.reel i{font-style:normal;display:flex;align-items:center;justify-content:center;aspect-ratio:1;font-size:min(10vw,52px);line-height:1}
+.reel i:nth-child(2){background:rgba(255,194,26,.35)}
+.reel.spin i{filter:blur(1.6px)}
+.reel.win{animation:slwin .5s 4 alternate}
+.slline{position:absolute;left:6px;right:6px;top:50%;height:3px;background:rgba(214,58,58,.8);border-radius:3px;pointer-events:none}
+@keyframes slwin{to{box-shadow:0 0 0 4px #fff,0 0 24px 8px #ffe066}}
+.ro-wrap{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:18px;align-items:start;margin-bottom:12px}
+@media(max-width:760px){.ro-wrap{grid-template-columns:1fr}}
+.ro-hist{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:8px}
+.rh{color:#fff;font:700 12px var(--body,inherit);min-width:26px;text-align:center;padding:3px 0;border-radius:8px}
+.ro-table{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;max-width:380px}
+.ro-out{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;max-width:380px;margin-top:6px}
+.rc{position:relative;border:2px solid rgba(255,255,255,.7);border-radius:8px;color:#fff;font:700 15px var(--body,inherit);padding:9px 2px;cursor:pointer;background:#15283a;min-width:0}
+.rc.rr{background:#e0344f}.rc.rk{background:#15283a}.rc.rz{background:#1fae5a}.rc.ro2{background:#0c5a63}.rc.rout{background:#0c5a63;font-size:13px}
+.rc.rout.rr{background:#e0344f}.rc.rout.rk{background:#15283a}
+.rc:hover{filter:brightness(1.2)}
+.rb{display:none;position:absolute;right:2px;top:2px;background:#ffc21a;color:#3a2400;font:800 11px var(--body,inherit);padding:1px 5px;border-radius:9px;font-style:normal;box-shadow:0 2px 0 #a56a00}
 .chboard{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));width:min(100%,560px);aspect-ratio:1/1;border:4px solid #ffc21a;border-radius:10px;overflow:hidden;margin:0 auto 10px 0;user-select:none;container-type:inline-size;box-sizing:border-box}
 .chsq{display:flex;align-items:center;justify-content:center;font-size:min(7.6vw,42px);font-size:10.5cqw;line-height:1;cursor:pointer;position:relative;min-width:0;min-height:0;overflow:hidden}
 .chsq.l{background:#bdf3c8}.chsq.d{background:#2fae72}.chsq.sel{outline:4px solid #ffc21a;outline-offset:-4px}
@@ -223,6 +243,8 @@ button.pc:hover:not(:disabled){transform:translateY(-4px) rotateX(4deg)}
   <button class="tab" role="tab" data-t="mk">Markets</button>
   <button class="tab" role="tab" data-t="td">Sun Guard</button>
   <button class="tab" role="tab" data-t="ch">Chess</button>
+  <button class="tab" role="tab" data-t="sl">Slots</button>
+  <button class="tab" role="tab" data-t="ro">Roulette</button>
 </nav>
 
 <div class="floor">
@@ -336,6 +358,38 @@ button.pc:hover:not(:disabled){transform:translateY(-4px) rotateX(4deg)}
     </div>
     <div class="msg" id="chMsg"></div>
   </section>
+  <section id="p-sl" hidden>
+    <div class="row sp"><h2>Sun Slots &middot; three reels</h2><div class="row" style="gap:6px"><input id="slBet" type="number" min="1" value="25" style="width:96px" aria-label="Bet"><button class="btn sm" data-bet="slBet" data-f="0.5">1/2</button><button class="btn sm" data-bet="slBet" data-f="2">2x</button><button class="btn sm" data-bet="slBet" data-f="max">Max</button></div></div>
+    <details class="how" open>
+      <summary>How to play (tap to hide)</summary>
+      <p style="margin:8px 0 0">Set your bet and press <b>Spin</b>. Your bet is taken when the reels start. Only the <b>middle row</b> counts: three matching symbols pay the multiple shown below, and a pair of Sunflowers, Sparks or Suns pays a smaller prize. Rarer symbols pay more. The payout is your bet times the multiple, and it already includes your bet.</p>
+    </details>
+    <div class="slm">
+      <div class="slreels" id="slReels"><div class="reel"><i></i><i></i><i></i></div><div class="reel"><i></i><i></i><i></i></div><div class="reel"><i></i><i></i><i></i></div><div class="slline"></div></div>
+      <div class="msg" id="slMsg">Place a bet and spin.</div>
+      <button id="slSpin" class="btn primary" style="font-size:20px;padding:12px 34px">Spin</button>
+    </div>
+    <h3 style="margin:18px 0 6px">Paytable</h3>
+    <div class="tbl"><table><tr><th>Symbols</th><th>Win</th><th>Pays</th></tr><tbody id="slPay"></tbody></table></div>
+  </section>
+
+  <section id="p-ro" hidden>
+    <div class="row sp"><h2>Roulette &middot; one zero</h2><span class="mono">Bets on the table: <b id="roTot">0</b></span></div>
+    <details class="how" open>
+      <summary>How to play (tap to hide)</summary>
+      <p style="margin:8px 0 0">Pick a chip size, then <b>tap the table</b> to place it. Tap again to stack more. You can bet on one number (pays <b>35 to 1</b>), a dozen or a column (<b>2 to 1</b>), or Red, Black, Odd, Even, 1-18 or 19-36 (<b>1 to 1</b>). You can place as many bets as you like. Press <b>Spin</b>: your bets are taken, the wheel turns, and every winning bet pays. Zero (green) beats every bet except a straight bet on 0, which is how the house wins on average.</p>
+    </details>
+    <div class="ro-wrap">
+      <div class="ro-left"><canvas id="roWheel" style="width:100%;max-width:300px;aspect-ratio:1;display:block;margin:0 auto"></canvas><div id="roHist" class="ro-hist"></div></div>
+      <div class="ro-right">
+        <div class="row" style="margin-bottom:8px"><span class="mute">Chip</span><span id="roChips" class="row" style="gap:6px"></span></div>
+        <div id="roTable" class="ro-table"></div>
+        <div id="roOut" class="ro-out"></div>
+      </div>
+    </div>
+    <div class="msg" id="roMsg">Place your bets, then spin.</div>
+    <div class="row"><button id="roSpin" class="btn primary" style="font-size:20px;padding:12px 34px">Spin</button><button id="roUndo" class="btn sm">Undo</button><button id="roClear" class="btn sm">Clear</button><button id="roAgain" class="btn sm">Repeat last bets</button></div>
+  </section>
 </div>
 
 <p class="foot">Play money only. Chips come from time at your desk and finished tasks, and nothing here touches real cash. Progress saves automatically.</p>
@@ -348,7 +402,7 @@ const fmt=n=>Math.floor(n).toLocaleString('en-US');
 const ds=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const today=()=>ds(new Date());
 const yesterday=()=>ds(new Date(Date.now()-864e5));
-const DEF=()=>({chips:100,earned:0,secs:0,since:0,day:today(),todaySecs:0,goal:120,streak:0,lastGoalDay:'',tasks:[],own:{},bj:{w:0,l:0},mk:[],pos:[],td:{round:1,ammo:0,spent:0,towers:[],live:false,wins:0,losses:0},chess:{g:null,live:false,paid:0,wins:0,lv:0,msg:""},st:{by:{},back:{}},lastSess:0,savedAt:0});
+const DEF=()=>({chips:100,earned:0,secs:0,since:0,day:today(),todaySecs:0,goal:120,streak:0,lastGoalDay:'',tasks:[],own:{},bj:{w:0,l:0},mk:[],pos:[],td:{round:1,ammo:0,spent:0,towers:[],live:false,wins:0,losses:0},chess:{g:null,live:false,paid:0,wins:0,lv:0,msg:""},st:{by:{},back:{}},lastSess:0,pend:{sl:0,ro:0},savedAt:0});
 let S=DEF(),dirty=false;
 const touch=()=>{dirty=true};
 let tt;
@@ -362,7 +416,7 @@ function renderBal(up){
   document.querySelectorAll('[data-buy]').forEach(b=>{const x=BIZ.find(z=>z.id===b.dataset.buy);b.disabled=cost(x)>Math.floor(S.chips)});
 }
 function earn(n,loud){S.chips+=n;S.earned+=n;touch();renderBal(loud);if(loud&&window.World)World.burst(14)}
-const CATS={tycoon:'Tycoon',bj:'Blackjack',vp:'Video poker',mk:'Markets',td:'Sun Guard',ch:'Chess'};
+const CATS={tycoon:'Tycoon',bj:'Blackjack',vp:'Video poker',mk:'Markets',td:'Sun Guard',ch:'Chess',sl:'Slots',ro:'Roulette'};
 const stat=()=>S.st||(S.st={by:{},back:{}});
 function spend(n,c){S.chips-=n;if(c){const o=stat().by;o[c]=(o[c]||0)+n}touch();renderBal()}
 function payout(n,c){S.chips+=n;if(c){const o=stat().back;o[c]=(o[c]||0)+n}touch();renderBal(true);if(n>0&&window.World)World.burst(Math.min(24,5+Math.floor(n/60)))}
@@ -510,7 +564,7 @@ $('#p-tycoon').addEventListener('click',e=>{
 /* ---------- tabs ---------- */
 function showTab(t){
   document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.t===t)));
-  ['tycoon','bj','vp','mk','td','ch'].forEach(k=>{$('#p-'+k).hidden=k!==t});
+  ['tycoon','bj','vp','mk','td','ch','sl','ro'].forEach(k=>{$('#p-'+k).hidden=k!==t});
 }
 $('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(b)showTab(b.dataset.t)};
 
@@ -535,7 +589,7 @@ function timerResume(){
   else{const len=Math.floor((S.runBeat-S.runT0)/1000);if(len>0)S.lastSess=len;S.runT0=null;touch()}
   renderDesk();
 }
-const adopt=o=>{S=Object.assign(DEF(),o);if(!S.bj)S.bj={w:0,l:0};if(!S.td)S.td=DEF().td;if(!S.chess)S.chess=DEF().chess;if(!S.st)S.st={by:{},back:{}};if(!S.lastSess)S.lastSess=0};
+const adopt=o=>{S=Object.assign(DEF(),o);if(!S.bj)S.bj={w:0,l:0};if(!S.td)S.td=DEF().td;if(!S.chess)S.chess=DEF().chess;if(!S.st)S.st={by:{},back:{}};if(!S.lastSess)S.lastSess=0;if(!S.pend)S.pend={sl:0,ro:0}};
 function renderAll(){renderBal();renderDesk();renderTasks();renderTycoon();$('#goalIn').value=S.goal;renderMk();renderPos();if(typeof tdRender==='function')tdRender();if(typeof chRender==='function')chRender()}
 async function boot(){
   let local=null;try{local=JSON.parse(localStorage.getItem('studystakes'))}catch(e){}
@@ -1235,6 +1289,145 @@ $('#chRes').addEventListener('click',()=>{
   if(!ch._rc){ch._rc=1;$('#chRes').textContent='Tap again to resign';setTimeout(()=>{ch._rc=0;chRender()},3000);return}
   ch._rc=0;chFinish('resign');
 });
+/* ---------- Sun Slots: three reels, centre line pays. Chips are spent up front and any win is saved as pending until the reels stop. ---------- */
+const SLS=[
+  {e:'🌱',w:30,p:8,pair:0,n:'Sprout'},
+  {e:'🍃',w:24,p:11,pair:0,n:'Leaf'},
+  {e:'💧',w:18,p:22,pair:0,n:'Droplet'},
+  {e:'🌻',w:14,p:45,pair:1,n:'Sunflower'},
+  {e:'⚡',w:9,p:130,pair:2,n:'Spark'},
+  {e:'☀️',w:5,p:600,pair:5,n:'Sun'}
+];
+const slPick=()=>{let r=Math.random()*100;for(const s of SLS){if((r-=s.w)<0)return s}return SLS[0]};
+/* multiplier of the bet returned for a centre line of three symbols (0 = loss) */
+function slEval(a){
+  if(a[0]===a[1]&&a[1]===a[2])return{mult:a[0].p,desc:'Three '+a[0].n+'s'};
+  for(const s of SLS){if(s.pair&&a.filter(x=>x===s).length===2)return{mult:s.pair,desc:'Two '+s.n+'s'}}
+  return{mult:0,desc:''};
+}
+function pendInit(){
+  if(!S.pend)S.pend={sl:0,ro:0};
+  ['sl','ro'].forEach(k=>{const v=S.pend[k]||0;if(v>0){payout(v,k);S.pend[k]=0;toast('Your '+(k==='sl'?'slot':'roulette')+' win was paid after the reload: +'+fmt(v))}});
+  touch();
+}
+let slBusy=false;
+const slCells=[0,1,2].map(i=>[...document.querySelectorAll('#slReels .reel')[i].children]);
+function slShow(i,top,mid,bot){[top,mid,bot].forEach((s,k)=>{slCells[i][k].textContent=s.e});}
+slCells.forEach((_,i)=>slShow(i,SLS[0],SLS[3],SLS[1]));
+$('#slSpin').addEventListener('click',()=>{
+  if(slBusy)return;
+  const bet=getBet('slBet');if(!bet)return;
+  spend(bet,'sl');
+  const res=[slPick(),slPick(),slPick()],ev=slEval(res),win=bet*ev.mult;
+  if(!S.pend)S.pend={sl:0,ro:0};
+  S.pend.sl=win;touch();flush();
+  slBusy=true;$('#slSpin').disabled=true;$('#slMsg').textContent='Spinning...';
+  document.querySelectorAll('#slReels .reel').forEach(r=>{r.classList.remove('win');r.classList.add('spin')});
+  const stopped=[false,false,false];
+  const iv=setInterval(()=>{stopped.forEach((s,i)=>{if(!s)slShow(i,slPick(),slPick(),slPick())})},70);
+  [800,1300,1800].forEach((t,i)=>setTimeout(()=>{
+    stopped[i]=true;slShow(i,slPick(),res[i],slPick());
+    const r=document.querySelectorAll('#slReels .reel')[i];r.classList.remove('spin');
+    if(i===2){
+      clearInterval(iv);
+      if(win){payout(win,'sl');S.pend.sl=0;document.querySelectorAll('#slReels .reel').forEach(x=>x.classList.add('win'))}
+      else S.pend.sl=0;
+      touch();flush();
+      $('#slMsg').textContent=win?ev.desc+'! You win '+fmt(win)+' chips ('+ev.mult+'x)':'No win this time.';
+      if(win&&window.World)World.burst(10);
+      slBusy=false;$('#slSpin').disabled=false;
+    }
+  },t));
+});
+$('#slPay').innerHTML=SLS.slice().reverse().map(s=>'<tr><td style="font-size:22px">'+s.e+s.e+s.e+'</td><td>'+s.n+'s in a row</td><td class="mono">'+s.p+'x</td></tr>').join('')+SLS.filter(s=>s.pair).reverse().map(s=>'<tr><td style="font-size:22px">'+s.e+s.e+'</td><td>Any two '+s.n+'s</td><td class="mono">'+s.pair+'x</td></tr>').join('');
+/* ---------- Roulette: European wheel, one zero. Straight-up pays 35 to 1, dozens and columns 2 to 1, even-money bets 1 to 1. ---------- */
+const ROW=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const ROED=[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+const roRed=n=>ROED.includes(n);
+const roCol=n=>n===0?'#1fae5a':roRed(n)?'#e0344f':'#15283a';
+/* every bet key: the pockets it covers and the multiple of the stake it returns on a win (stake included) */
+const ROB={};
+for(let n=0;n<=36;n++)ROB['n'+n]={f:x=>x===n,m:36,l:String(n)};
+[1,2,3].forEach(c=>{ROB['c'+c]={f:x=>x>0&&x%3===c%3,m:3,l:'2 to 1'};ROB['d'+c]={f:x=>x>(c-1)*12&&x<=c*12,m:3,l:['1st 12','2nd 12','3rd 12'][c-1]}});
+Object.assign(ROB,{low:{f:x=>x>=1&&x<=18,m:2,l:'1-18'},even:{f:x=>x>0&&x%2===0,m:2,l:'Even'},red:{f:x=>x>0&&roRed(x),m:2,l:'Red'},black:{f:x=>x>0&&!roRed(x),m:2,l:'Black'},odd:{f:x=>x%2===1,m:2,l:'Odd'},high:{f:x=>x>=19,m:2,l:'19-36'}});
+function roPay(n,bets){let w=0;for(const k in bets)if(ROB[k].f(n))w+=bets[k]*ROB[k].m;return w}
+let roBets={},roLast={},roChip=10,roBusy=false,roStack=[],roAng=0,roHist=[];
+const roTotal=()=>Object.keys(roBets).reduce((a,k)=>a+roBets[k],0);
+function roBuild(){
+  const cell=(k,cls,txt,st)=>'<button class="rc '+cls+'" data-k="'+k+'"'+(st?' style="'+st+'"':'')+'><span>'+txt+'</span><i class="rb"></i></button>';
+  let h=cell('n0','rz','0','grid-column:1/4');
+  for(let r=0;r<12;r++)for(let c=1;c<=3;c++){const n=r*3+c;h+=cell('n'+n,roRed(n)?'rr':'rk',n)}
+  h+=cell('c1','ro2','2 to 1')+cell('c2','ro2','2 to 1')+cell('c3','ro2','2 to 1');
+  $('#roTable').innerHTML=h;
+  $('#roOut').innerHTML=['d1','d2','d3','low','even','red','black','odd','high'].map(k=>cell(k,'rout'+(k==='red'?' rr':k==='black'?' rk':''),ROB[k].l)).join('');
+  $('#roChips').innerHTML=[10,50,100,500,1000].map(v=>'<button class="btn sm'+(v===roChip?' primary':'')+'" data-chip="'+v+'">'+v+'</button>').join('');
+}
+function roRender(){
+  document.querySelectorAll('#p-ro .rc').forEach(b=>{const a=roBets[b.dataset.k]||0,r=b.querySelector('.rb');r.textContent=a?fmt(a):'';r.style.display=a?'block':'none'});
+  $('#roTot').textContent=fmt(roTotal());
+  document.querySelectorAll('#roChips [data-chip]').forEach(b=>b.classList.toggle('primary',+b.dataset.chip===roChip));
+  $('#roHist').innerHTML=roHist.slice(0,14).map(n=>'<b class="rh" style="background:'+roCol(n)+'">'+n+'</b>').join('');
+}
+const roCv=$('#roWheel'),roCx=roCv.getContext('2d'),RW=37,RS=Math.PI*2/RW;
+function roDraw(ang,ball,br){
+  const d=Math.min(2,window.devicePixelRatio||1),W=roCv.clientWidth||260;
+  if(roCv.width!==Math.round(W*d)){roCv.width=Math.round(W*d);roCv.height=Math.round(W*d)}
+  const c=roCx,s=roCv.width/300;c.setTransform(s,0,0,s,0,0);c.clearRect(0,0,300,300);
+  c.save();c.translate(150,150);
+  c.fillStyle='#6a3a12';c.beginPath();c.arc(0,0,148,0,6.3);c.fill();
+  c.rotate(ang);
+  for(let i=0;i<RW;i++){
+    const n=ROW[i],a0=-Math.PI/2+i*RS;
+    c.fillStyle=roCol(n);c.beginPath();c.moveTo(0,0);c.arc(0,0,134,a0,a0+RS);c.closePath();c.fill();
+    c.strokeStyle='rgba(255,215,120,.7)';c.lineWidth=1;c.stroke();
+    c.save();c.rotate(a0+RS/2+Math.PI/2);c.fillStyle='#fff';c.font='bold 11px sans-serif';c.textAlign='center';c.fillText(n,0,-116);c.restore();
+  }
+  c.fillStyle='#3a2208';c.beginPath();c.arc(0,0,86,0,6.3);c.fill();
+  c.fillStyle='#ffc21a';c.beginPath();c.arc(0,0,22,0,6.3);c.fill();
+  c.restore();
+  c.save();c.translate(150,150);c.rotate(ball);c.fillStyle='#fff';c.strokeStyle='#999';c.beginPath();c.arc(0,-br,6,0,6.3);c.fill();c.stroke();c.restore();
+  c.fillStyle='#ffc21a';c.beginPath();c.moveTo(150,2);c.lineTo(140,-8);c.lineTo(160,-8);c.closePath();c.fill();
+}
+function roSpin(){
+  if(roBusy)return;
+  const tot=roTotal();
+  if(!tot){toast('Tap the table to place a bet first');return}
+  if(tot>Math.floor(S.chips)){toast('Not enough chips: your bets total '+fmt(tot));return}
+  const n=Math.floor(Math.random()*37),win=roPay(n,roBets),bets=Object.assign({},roBets);
+  spend(tot,'ro');
+  if(!S.pend)S.pend={sl:0,ro:0};
+  S.pend.ro=win;touch();flush();
+  roLast=bets;roBets={};roStack=[];roBusy=true;roRender();$('#roMsg').textContent='No more bets. The ball is rolling...';
+  const i=ROW.indexOf(n),a0=roAng%(Math.PI*2),target=-(i+.5)*RS;
+  let delta=((target-a0)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);const total=Math.PI*2*5+delta,t0=performance.now(),DUR=4600;
+  (function frame(now){
+    const t=Math.min(1,(now-t0)/DUR),e=1-Math.pow(1-t,3);
+    roDraw(a0+total*e,-(1-e)*Math.PI*2*9,128-14*e*e);
+    if(t<1){requestAnimationFrame(frame);return}
+    roAng=a0+total;
+    roHist.unshift(n);
+    if(win)payout(win,'ro');S.pend.ro=0;touch();flush();
+    const net=win-tot;
+    $('#roMsg').innerHTML='<b style="color:#fff;background:'+roCol(n)+';padding:2px 10px;border-radius:10px">'+n+'</b> '+(n===0?'Green':roRed(n)?'Red':'Black')+'. '+(win?'You win '+fmt(win)+' (net '+(net>=0?'+':'-')+fmt(Math.abs(net))+').':'No win. You lost '+fmt(tot)+'.');
+    if(win&&window.World)World.burst(10);
+    roBusy=false;roRender();
+  })(t0);
+}
+$('#p-ro').addEventListener('click',e=>{
+  const cb=e.target.closest('[data-chip]'),cell=e.target.closest('.rc'),id=e.target.closest('button');
+  if(cb){roChip=+cb.dataset.chip;roRender();return}
+  if(cell&&!roBusy){
+    if(roTotal()+roChip>Math.floor(S.chips)){toast('Not enough chips for another '+roChip+' chip');return}
+    roBets[cell.dataset.k]=(roBets[cell.dataset.k]||0)+roChip;roStack.push(cell.dataset.k);roRender();return;
+  }
+  if(!id||roBusy)return;
+  if(id.id==='roSpin')roSpin();
+  else if(id.id==='roUndo'){const k=roStack.pop();if(k){roBets[k]-=roChip>roBets[k]?roBets[k]:roChip;if(roBets[k]<=0)delete roBets[k];roRender()}}
+  else if(id.id==='roClear'){roBets={};roStack=[];roRender()}
+  else if(id.id==='roAgain'){const t=Object.keys(roLast).reduce((a,k)=>a+roLast[k],0);if(!t){toast('No previous bets');return}if(t>Math.floor(S.chips)){toast('Not enough chips to repeat: '+fmt(t));return}roBets=Object.assign({},roLast);roStack=Object.keys(roBets);roRender()}
+});
+roBuild();roRender();roDraw(0,0,128);
+if(window.ResizeObserver)new ResizeObserver(()=>{if(!roBusy)roDraw(roAng,0,128)}).observe(roCv);
 /* ---------- 3D solarpunk island: cel-shaded, inked, faceted (three.js) ---------- */
 window.World=(function(){
 const stub={sync(){},burst(){},setRun(){}};
@@ -1865,7 +2058,7 @@ $('#p-mk').addEventListener('click',e=>{
 $('#mkGrid').insertAdjacentHTML('beforebegin','<div class="row" style="margin:0 0 12px"><label for="mkQty" class="mute">Contracts per trade</label><input id="mkQty" type="number" min="1" value="5" style="width:84px"><span class="mute" style="margin-left:10px">Chart</span><span id="mkRng" class="row" style="gap:6px"></span><span id="posTot" class="mono" style="margin-left:auto;font-size:14px"></span></div>');
 renderRng();
 showTab('tycoon');renderBj();renderVp();
-boot().then(()=>{mkTick();renderPos();tdInit();chInit();timerResume()});
+boot().then(()=>{mkTick();renderPos();tdInit();chInit();timerResume();pendInit()});
 setInterval(tick,1000);
 setInterval(mkTick,2000);
 </script>

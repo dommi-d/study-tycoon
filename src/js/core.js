@@ -3,7 +3,7 @@ const fmt=n=>Math.floor(n).toLocaleString('en-US');
 const ds=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const today=()=>ds(new Date());
 const yesterday=()=>ds(new Date(Date.now()-864e5));
-const DEF=()=>({chips:100,earned:0,secs:0,since:0,day:today(),todaySecs:0,goal:120,streak:0,lastGoalDay:'',tasks:[],own:{},bj:{w:0,l:0},mk:[],pos:[],td:{round:1,ammo:0,spent:0,towers:[],live:false,wins:0,losses:0},chess:{g:null,live:false,paid:0,wins:0,lv:0,msg:""},st:{by:{},back:{}},lastSess:0,savedAt:0});
+const DEF=()=>({chips:100,earned:0,secs:0,since:0,day:today(),todaySecs:0,goal:120,streak:0,lastGoalDay:'',tasks:[],own:{},bj:{w:0,l:0},mk:[],pos:[],td:{round:1,ammo:0,spent:0,towers:[],live:false,wins:0,losses:0},chess:{g:null,live:false,paid:0,wins:0,lv:0,msg:""},st:{by:{},back:{}},lastSess:0,pend:{sl:0,ro:0},savedAt:0});
 let S=DEF(),dirty=false;
 const touch=()=>{dirty=true};
 let tt;
@@ -17,7 +17,7 @@ function renderBal(up){
   document.querySelectorAll('[data-buy]').forEach(b=>{const x=BIZ.find(z=>z.id===b.dataset.buy);b.disabled=cost(x)>Math.floor(S.chips)});
 }
 function earn(n,loud){S.chips+=n;S.earned+=n;touch();renderBal(loud);if(loud&&window.World)World.burst(14)}
-const CATS={tycoon:'Tycoon',bj:'Blackjack',vp:'Video poker',mk:'Markets',td:'Sun Guard',ch:'Chess'};
+const CATS={tycoon:'Tycoon',bj:'Blackjack',vp:'Video poker',mk:'Markets',td:'Sun Guard',ch:'Chess',sl:'Slots',ro:'Roulette'};
 const stat=()=>S.st||(S.st={by:{},back:{}});
 function spend(n,c){S.chips-=n;if(c){const o=stat().by;o[c]=(o[c]||0)+n}touch();renderBal()}
 function payout(n,c){S.chips+=n;if(c){const o=stat().back;o[c]=(o[c]||0)+n}touch();renderBal(true);if(n>0&&window.World)World.burst(Math.min(24,5+Math.floor(n/60)))}
@@ -165,7 +165,7 @@ $('#p-tycoon').addEventListener('click',e=>{
 /* ---------- tabs ---------- */
 function showTab(t){
   document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.t===t)));
-  ['tycoon','bj','vp','mk','td','ch'].forEach(k=>{$('#p-'+k).hidden=k!==t});
+  ['tycoon','bj','vp','mk','td','ch','sl','ro'].forEach(k=>{$('#p-'+k).hidden=k!==t});
 }
 $('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(b)showTab(b.dataset.t)};
 
@@ -190,7 +190,7 @@ function timerResume(){
   else{const len=Math.floor((S.runBeat-S.runT0)/1000);if(len>0)S.lastSess=len;S.runT0=null;touch()}
   renderDesk();
 }
-const adopt=o=>{S=Object.assign(DEF(),o);if(!S.bj)S.bj={w:0,l:0};if(!S.td)S.td=DEF().td;if(!S.chess)S.chess=DEF().chess;if(!S.st)S.st={by:{},back:{}};if(!S.lastSess)S.lastSess=0};
+const adopt=o=>{S=Object.assign(DEF(),o);if(!S.bj)S.bj={w:0,l:0};if(!S.td)S.td=DEF().td;if(!S.chess)S.chess=DEF().chess;if(!S.st)S.st={by:{},back:{}};if(!S.lastSess)S.lastSess=0;if(!S.pend)S.pend={sl:0,ro:0}};
 function renderAll(){renderBal();renderDesk();renderTasks();renderTycoon();$('#goalIn').value=S.goal;renderMk();renderPos();if(typeof tdRender==='function')tdRender();if(typeof chRender==='function')chRender()}
 async function boot(){
   let local=null;try{local=JSON.parse(localStorage.getItem('studystakes'))}catch(e){}

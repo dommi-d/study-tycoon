@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-JS_FILES=(src/js/core.js src/js/cards.js src/js/td.js src/js/chess.js src/js/world-a.js src/js/world-b.js src/js/markets.js)
+JS_FILES=(src/js/core.js src/js/cards.js src/js/td.js src/js/chess.js src/js/slots.js src/js/roulette.js src/js/world-a.js src/js/world-b.js src/js/markets.js)
 
 mkdir -p build
 

@@ -56,6 +56,8 @@
   <button class="tab" role="tab" data-t="mk">Markets</button>
   <button class="tab" role="tab" data-t="td">Sun Guard</button>
   <button class="tab" role="tab" data-t="ch">Chess</button>
+  <button class="tab" role="tab" data-t="sl">Slots</button>
+  <button class="tab" role="tab" data-t="ro">Roulette</button>
 </nav>
 
 <div class="floor">
@@ -168,6 +170,38 @@
       <div id="chBoard" class="chboard"></div>
     </div>
     <div class="msg" id="chMsg"></div>
+  </section>
+  <section id="p-sl" hidden>
+    <div class="row sp"><h2>Sun Slots &middot; three reels</h2><div class="row" style="gap:6px"><input id="slBet" type="number" min="1" value="25" style="width:96px" aria-label="Bet"><button class="btn sm" data-bet="slBet" data-f="0.5">1/2</button><button class="btn sm" data-bet="slBet" data-f="2">2x</button><button class="btn sm" data-bet="slBet" data-f="max">Max</button></div></div>
+    <details class="how" open>
+      <summary>How to play (tap to hide)</summary>
+      <p style="margin:8px 0 0">Set your bet and press <b>Spin</b>. Your bet is taken when the reels start. Only the <b>middle row</b> counts: three matching symbols pay the multiple shown below, and a pair of Sunflowers, Sparks or Suns pays a smaller prize. Rarer symbols pay more. The payout is your bet times the multiple, and it already includes your bet.</p>
+    </details>
+    <div class="slm">
+      <div class="slreels" id="slReels"><div class="reel"><i></i><i></i><i></i></div><div class="reel"><i></i><i></i><i></i></div><div class="reel"><i></i><i></i><i></i></div><div class="slline"></div></div>
+      <div class="msg" id="slMsg">Place a bet and spin.</div>
+      <button id="slSpin" class="btn primary" style="font-size:20px;padding:12px 34px">Spin</button>
+    </div>
+    <h3 style="margin:18px 0 6px">Paytable</h3>
+    <div class="tbl"><table><tr><th>Symbols</th><th>Win</th><th>Pays</th></tr><tbody id="slPay"></tbody></table></div>
+  </section>
+
+  <section id="p-ro" hidden>
+    <div class="row sp"><h2>Roulette &middot; one zero</h2><span class="mono">Bets on the table: <b id="roTot">0</b></span></div>
+    <details class="how" open>
+      <summary>How to play (tap to hide)</summary>
+      <p style="margin:8px 0 0">Pick a chip size, then <b>tap the table</b> to place it. Tap again to stack more. You can bet on one number (pays <b>35 to 1</b>), a dozen or a column (<b>2 to 1</b>), or Red, Black, Odd, Even, 1-18 or 19-36 (<b>1 to 1</b>). You can place as many bets as you like. Press <b>Spin</b>: your bets are taken, the wheel turns, and every winning bet pays. Zero (green) beats every bet except a straight bet on 0, which is how the house wins on average.</p>
+    </details>
+    <div class="ro-wrap">
+      <div class="ro-left"><canvas id="roWheel" style="width:100%;max-width:300px;aspect-ratio:1;display:block;margin:0 auto"></canvas><div id="roHist" class="ro-hist"></div></div>
+      <div class="ro-right">
+        <div class="row" style="margin-bottom:8px"><span class="mute">Chip</span><span id="roChips" class="row" style="gap:6px"></span></div>
+        <div id="roTable" class="ro-table"></div>
+        <div id="roOut" class="ro-out"></div>
+      </div>
+    </div>
+    <div class="msg" id="roMsg">Place your bets, then spin.</div>
+    <div class="row"><button id="roSpin" class="btn primary" style="font-size:20px;padding:12px 34px">Spin</button><button id="roUndo" class="btn sm">Undo</button><button id="roClear" class="btn sm">Clear</button><button id="roAgain" class="btn sm">Repeat last bets</button></div>
   </section>
 </div>
 
